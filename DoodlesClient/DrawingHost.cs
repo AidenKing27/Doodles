@@ -9,11 +9,10 @@ public class DrawingHost : FrameworkElement
     public int UserThickness { get; set; } = 3;
     public Brush UserBrush { get; set; } = Brushes.Black;
 
-    private readonly Stack<DrawingVisual> _visualsStack = new();
-    private readonly List<DrawingVisual> _visuals = new();
-    private DrawingVisual _currentStroke;
-    private List<Point> _currentPoints = new();
-    private bool _isDrawing = false;
+    public List<DrawingVisual> _visuals = new();
+    public DrawingVisual _currentStroke;
+    public List<Point> _currentPoints = new();
+    public bool _isDrawing = false;
 
     // Called in the background for accessing visuals and displaying
     protected override int VisualChildrenCount => _visuals.Count;
@@ -84,22 +83,11 @@ public class DrawingHost : FrameworkElement
         using (StreamGeometryContext context = geometry.Open())
         {
             context.BeginFigure(_currentPoints[0], false, false);
-            // PolyLineTo draws straight segments between points — fills the gaps.
             context.PolyLineTo(_currentPoints.Skip(1).ToArray(), true, true);
         }
         geometry.Freeze();
 
         dc.DrawGeometry(null, pen, geometry);
-
-        //if (_currentStroke == null || _currentPoints.Count < 2) return;
-
-        //using DrawingContext dc = _currentStroke.RenderOpen();
-
-        //var pen = new Pen(Brushes.Red, Thickness) { LineJoin = PenLineJoin.Round };
-        //for (int i = 1; i < _currentPoints.Count; i++)
-        //{
-        //    dc.DrawEllipse(null, pen, _currentPoints[i], Thickness, Thickness);
-        //}
     }
 
     public void AddVisual(DrawingVisual visual)
@@ -120,5 +108,11 @@ public class DrawingHost : FrameworkElement
     {
         if (_visuals.Count == 0) return;
         RemoveVisual(_visuals[^1]);
+    }
+
+    public void Clear()
+    {
+        foreach (var v in _visuals.ToList())
+            RemoveVisual(v);
     }
 }

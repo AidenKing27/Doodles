@@ -16,29 +16,56 @@ namespace DoodlesClient;
 /// </summary>
 public partial class MainWindow : Window
 {
+    DrawingInfo di;
+
     public MainWindow()
     {
         InitializeComponent();
     }
 
-    private void Button_Click(object sender, RoutedEventArgs e)
+    private void ThinBtn_Click(object sender, RoutedEventArgs e)
     {
-        int t = 0;
+        drawingHost.UserThickness = 3;
+    }
 
-        switch ((string)((Button)sender).Content)
-        {
-            case "Thin":
-                t = 3;
-                break;
-            case "Thick":
-                t = 10;
-                break;
-        }
-        drawingHost.UserThickness = t;
+    private void ThickBtn_Click(object sender, RoutedEventArgs e)
+    {
+        drawingHost.UserThickness = 10;
     }
 
     private void UndoBtn_Click(object sender, RoutedEventArgs e)
     {
         drawingHost.Undo();
+    }
+
+    private void SaveBtn_Click(object sender, RoutedEventArgs e)
+    {
+        di = new()
+        {
+            UserThickness = drawingHost.UserThickness,
+            UserBrush = drawingHost.UserBrush,
+            Visuals = drawingHost._visuals.ToList(),
+            CurrentStroke = drawingHost._currentStroke,
+            CurrentPoints = drawingHost._currentPoints.ToList()
+        };
+
+        drawingHost.Clear();
+        //drawingHost = new();
+    }
+
+    private void PasteBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (di == null) return;
+
+        drawingHost.UserThickness = di.UserThickness;
+        drawingHost.UserBrush = di.UserBrush;
+
+        // Clear any existing visuals and re-add the saved visuals using AddVisual
+        drawingHost.Clear();
+        foreach (var v in di.Visuals)
+            drawingHost.AddVisual(v);
+
+        drawingHost._currentStroke = di.CurrentStroke;
+        drawingHost._currentPoints = di.CurrentPoints.ToList(); // copy again to avoid shared list
     }
 }
