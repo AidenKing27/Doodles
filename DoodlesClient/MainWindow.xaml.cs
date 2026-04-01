@@ -16,11 +16,48 @@ namespace DoodlesClient;
 /// </summary>
 public partial class MainWindow : Window
 {
-    DrawingInfo di;
+    Window1 window1;
 
     public MainWindow()
     {
         InitializeComponent();
+    }
+
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        window1 = new();
+        window1.Show();
+
+        drawingHost.DoodleMouseDownEvent += DrawingHost_MouseDownCustomEvent;
+        drawingHost.DoodleMouseMoveEvent += DrawingHost_MouseMoveCustomEvent;
+        drawingHost.DoodleMouseUpEvent += DrawingHost_MouseUpCustomEvent;
+        drawingHost.DoodleUndoEvent += DrawingHost_UndoCustomEvent;
+        drawingHost.DoodleClearEvent += DrawingHost_DoodleClearEvent;
+    }
+
+    private void DrawingHost_DoodleClearEvent()
+    {
+        window1.drawingHost.Clear();
+    }
+
+    private void DrawingHost_MouseDownCustomEvent(Point p)
+    {
+        window1.drawingHost.StartStrokeAt(p);
+    }
+
+    private void DrawingHost_MouseMoveCustomEvent(Point p)
+    {
+        window1.drawingHost.ContinueStrokeAt(p);
+    }
+
+    private void DrawingHost_MouseUpCustomEvent()
+    {
+        window1.drawingHost.EndStroke();
+    }
+
+    private void DrawingHost_UndoCustomEvent()
+    {
+        window1.drawingHost.Undo();
     }
 
     private void ThinBtn_Click(object sender, RoutedEventArgs e)
@@ -36,36 +73,5 @@ public partial class MainWindow : Window
     private void UndoBtn_Click(object sender, RoutedEventArgs e)
     {
         drawingHost.Undo();
-    }
-
-    private void SaveBtn_Click(object sender, RoutedEventArgs e)
-    {
-        di = new()
-        {
-            UserThickness = drawingHost.UserThickness,
-            UserBrush = drawingHost.UserBrush,
-            Visuals = drawingHost._visuals.ToList(),
-            CurrentStroke = drawingHost._currentStroke,
-            CurrentPoints = drawingHost._currentPoints.ToList()
-        };
-
-        drawingHost.Clear();
-        //drawingHost = new();
-    }
-
-    private void PasteBtn_Click(object sender, RoutedEventArgs e)
-    {
-        if (di == null) return;
-
-        drawingHost.UserThickness = di.UserThickness;
-        drawingHost.UserBrush = di.UserBrush;
-
-        // Clear any existing visuals and re-add the saved visuals using AddVisual
-        drawingHost.Clear();
-        foreach (var v in di.Visuals)
-            drawingHost.AddVisual(v);
-
-        drawingHost._currentStroke = di.CurrentStroke;
-        drawingHost._currentPoints = di.CurrentPoints.ToList(); // copy again to avoid shared list
     }
 }

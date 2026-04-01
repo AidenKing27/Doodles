@@ -6,23 +6,53 @@ namespace DoodlesClient;
 
 public class DrawingHost : FrameworkElement
 {
+    #region Events & Delegates
+
+    public delegate void MousePoint(Point p);
+    public event MousePoint DoodleMouseDownEvent;
+    public event MousePoint DoodleMouseMoveEvent;
+
+    public delegate void MouseAction();
+    public event MouseAction DoodleMouseUpEvent;
+    public event MouseAction DoodleUndoEvent;
+    public event MouseAction DoodleClearEvent;
+
+    #endregion Events & Delegates
+
+    #region Properties
+
     public int UserThickness { get; set; } = 3;
     public Brush UserBrush { get; set; } = Brushes.Black;
+    public List<DrawingVisual> Visuals { get; set; } = new();
+    public DrawingVisual CurrentStroke { get; set; }
+    public List<Point> CurrentPoints { get; set; } = new();
+    public bool IsDrawing { get; set; }
 
-    public List<DrawingVisual> _visuals = new();
-    public DrawingVisual _currentStroke;
-    public List<Point> _currentPoints = new();
-    public bool _isDrawing = false;
+    #endregion Properties
 
     // Called in the background for accessing visuals and displaying
-    protected override int VisualChildrenCount => _visuals.Count;
-    protected override Visual GetVisualChild(int index) => _visuals[index];
+    protected override int VisualChildrenCount => Visuals.Count;
+    protected override Visual GetVisualChild(int index) => Visuals[index];
 
     public DrawingHost()
     {
         MouseLeftButtonDown += OnMouseDown;
         MouseLeftButtonUp += OnMouseUp;
         MouseMove += OnMouseMove;
+    }
+
+    public void AddVisual(DrawingVisual visual)
+    {
+        Visuals.Add(visual);
+        AddVisualChild(visual);
+        AddLogicalChild(visual);
+    }
+
+    public void RemoveVisual(DrawingVisual visual)
+    {
+        Visuals.Remove(visual);
+        RemoveVisualChild(visual);
+        RemoveLogicalChild(visual);
     }
 
     // Tells WPF to allow the entire DrawingHost surface to be clickable
@@ -38,39 +68,62 @@ public class DrawingHost : FrameworkElement
         Clip = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
     }
 
+    #region Events
+
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
-        _isDrawing = true;
-        _currentPoints.Clear();
-        _currentPoints.Add(e.GetPosition(this));
-
-        _currentStroke = new DrawingVisual();
-        AddVisual(_currentStroke);
-
+        StartStrokeAt(e.GetPosition(this));
         CaptureMouse(); // keep tracking even if cursor leaves bounds
+        DoodleMouseDownEvent?.Invoke(e.GetPosition(this));
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
-        if (!_isDrawing) return;
-
-        _currentPoints.Add(e.GetPosition(this));
-        DrawCurrentStroke();
+        ContinueStrokeAt(e.GetPosition(this));
+        DoodleMouseMoveEvent?.Invoke(e.GetPosition(this));
     }
 
     private void OnMouseUp(object sender, MouseButtonEventArgs e)
     {
-        _isDrawing = false;
-        _currentStroke = null!;
-        _currentPoints.Clear();
+        EndStroke();
         ReleaseMouseCapture();
+        DoodleMouseUpEvent?.Invoke();
     }
 
-    private void DrawCurrentStroke()
-    {
-        if (_currentStroke == null || _currentPoints.Count < 2) return;
+    #endregion Events
 
-        using DrawingContext dc = _currentStroke.RenderOpen();
+    public void StartStrokeAt(Point p)
+    {
+        IsDrawing = true;
+        CurrentPoints.Clear();
+        CurrentPoints.Add(p);
+
+        CurrentStroke = new DrawingVisual();
+        AddVisual(CurrentStroke);
+
+        Doodle();
+    }
+
+    public void ContinueStrokeAt(Point p)
+    {
+        if (!IsDrawing) return;
+        CurrentPoints.Add(p);
+        Doodle();
+    }
+
+    public void EndStroke()
+    {
+        if (!IsDrawing) return;
+        IsDrawing = false;
+        CurrentStroke = null!;
+        CurrentPoints.Clear();
+    }
+
+    public void Doodle()
+    {
+        if (CurrentStroke == null || CurrentPoints.Count < 2) return;
+
+        using DrawingContext dc = CurrentStroke.RenderOpen();
 
         Pen pen = new Pen(UserBrush, UserThickness)
         {
@@ -82,37 +135,26 @@ public class DrawingHost : FrameworkElement
         StreamGeometry geometry = new();
         using (StreamGeometryContext context = geometry.Open())
         {
-            context.BeginFigure(_currentPoints[0], false, false);
-            context.PolyLineTo(_currentPoints.Skip(1).ToArray(), true, true);
+            context.BeginFigure(CurrentPoints[0], false, false);
+            context.PolyLineTo(CurrentPoints.Skip(1).ToArray(), true, true);
         }
+
         geometry.Freeze();
 
         dc.DrawGeometry(null, pen, geometry);
     }
 
-    public void AddVisual(DrawingVisual visual)
-    {
-        _visuals.Add(visual);
-        AddVisualChild(visual);
-        AddLogicalChild(visual);
-    }
-
-    public void RemoveVisual(DrawingVisual visual)
-    {
-        _visuals.Remove(visual);
-        RemoveVisualChild(visual);
-        RemoveLogicalChild(visual);
-    }
-
     public void Undo()
     {
-        if (_visuals.Count == 0) return;
-        RemoveVisual(_visuals[^1]);
+        if (Visuals.Count == 0) return;
+        RemoveVisual(Visuals[^1]);
+        DoodleUndoEvent?.Invoke();
     }
 
     public void Clear()
     {
-        foreach (var v in _visuals.ToList())
+        foreach (var v in Visuals.ToList())
             RemoveVisual(v);
+        DoodleClearEvent?.Invoke();
     }
 }
