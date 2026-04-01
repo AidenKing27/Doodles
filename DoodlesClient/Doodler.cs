@@ -4,7 +4,7 @@ using System.Windows.Media;
 
 namespace DoodlesClient;
 
-public class DrawingHost : FrameworkElement
+public class Doodler : FrameworkElement
 {
     #region Events & Delegates
 
@@ -23,37 +23,25 @@ public class DrawingHost : FrameworkElement
 
     public int UserThickness { get; set; } = 3;
     public Brush UserBrush { get; set; } = Brushes.Black;
-    public List<DrawingVisual> Visuals { get; set; } = new();
+    public List<DrawingVisual> Doodles { get; set; } = new();
     public DrawingVisual CurrentStroke { get; set; }
     public List<Point> CurrentPoints { get; set; } = new();
-    public bool IsDrawing { get; set; }
+    public bool IsDoodling { get; set; }
 
     #endregion Properties
 
-    // Called in the background for accessing visuals and displaying
-    protected override int VisualChildrenCount => Visuals.Count;
-    protected override Visual GetVisualChild(int index) => Visuals[index];
-
-    public DrawingHost()
+    public Doodler()
     {
         MouseLeftButtonDown += OnMouseDown;
         MouseLeftButtonUp += OnMouseUp;
         MouseMove += OnMouseMove;
     }
 
-    public void AddVisual(DrawingVisual visual)
-    {
-        Visuals.Add(visual);
-        AddVisualChild(visual);
-        AddLogicalChild(visual);
-    }
+    #region Hidden Functionality
 
-    public void RemoveVisual(DrawingVisual visual)
-    {
-        Visuals.Remove(visual);
-        RemoveVisualChild(visual);
-        RemoveLogicalChild(visual);
-    }
+    // Called in the background for accessing visuals and displaying
+    protected override int VisualChildrenCount => Doodles.Count;
+    protected override Visual GetVisualChild(int index) => Doodles[index];
 
     // Tells WPF to allow the entire DrawingHost surface to be clickable
     protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParams)
@@ -67,6 +55,8 @@ public class DrawingHost : FrameworkElement
         base.OnRenderSizeChanged(sizeInfo);
         Clip = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
     }
+
+    #endregion Hidden Functionality  
 
     #region Events
 
@@ -92,31 +82,47 @@ public class DrawingHost : FrameworkElement
 
     #endregion Events
 
+    #region Methods
+
     public void StartStrokeAt(Point p)
     {
-        IsDrawing = true;
+        IsDoodling = true;
         CurrentPoints.Clear();
         CurrentPoints.Add(p);
 
         CurrentStroke = new DrawingVisual();
-        AddVisual(CurrentStroke);
+        AddDoodle(CurrentStroke);
 
         Doodle();
     }
 
     public void ContinueStrokeAt(Point p)
     {
-        if (!IsDrawing) return;
+        if (!IsDoodling) return;
         CurrentPoints.Add(p);
         Doodle();
     }
 
     public void EndStroke()
     {
-        if (!IsDrawing) return;
-        IsDrawing = false;
+        if (!IsDoodling) return;
+        IsDoodling = false;
         CurrentStroke = null!;
         CurrentPoints.Clear();
+    }
+
+    public void AddDoodle(DrawingVisual visual)
+    {
+        Doodles.Add(visual);
+        AddVisualChild(visual);
+        AddLogicalChild(visual);
+    }
+
+    public void RemoveDoodle(DrawingVisual visual)
+    {
+        Doodles.Remove(visual);
+        RemoveVisualChild(visual);
+        RemoveLogicalChild(visual);
     }
 
     public void Doodle()
@@ -146,15 +152,17 @@ public class DrawingHost : FrameworkElement
 
     public void Undo()
     {
-        if (Visuals.Count == 0) return;
-        RemoveVisual(Visuals[^1]);
+        if (Doodles.Count == 0) return;
+        RemoveDoodle(Doodles[^1]);
         DoodleUndoEvent?.Invoke();
     }
 
     public void Clear()
     {
-        foreach (var v in Visuals.ToList())
-            RemoveVisual(v);
+        foreach (var v in Doodles.ToList())
+            RemoveDoodle(v);
         DoodleClearEvent?.Invoke();
     }
+
+    #endregion Methods
 }
