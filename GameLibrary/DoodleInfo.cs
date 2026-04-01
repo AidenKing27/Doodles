@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Media;
 
-namespace DoodlesClient;
+namespace GameLibrary;
 
 public class DoodleInfo
 {
