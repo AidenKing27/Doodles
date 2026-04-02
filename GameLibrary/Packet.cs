@@ -2,6 +2,6 @@
 
 public class Packet
 {
-    public MessageType ContentType { get; set; }
-    public object Content { get; set; }
+    public ContentType ContentType { get; set; }
+    public string Content { get; set; }
 }

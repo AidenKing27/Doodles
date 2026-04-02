@@ -21,50 +21,107 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="9*" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Label Content="MAIN"></Label>
-            
+            <Grid Grid.Row="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="3*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Label Content="MAIN"></Label>
+                    <Button x:Name="ConnectBtn"
+                            Grid.Column="1"
+                            Content="Connect"
+                            Margin="5"
+                            Click="ConnectBtn_Click">
+
+                    </Button>
+                </Grid>
+            </Grid>
+
             <Border Grid.Row="1"
                     BorderBrush="Black"
                     BorderThickness="2"
-                    CornerRadius="5"
-                    Margin="25">
+                    Margin="10">
                 <gl:Doodler x:Name="Doodler"
-                                   HorizontalAlignment="Stretch"
-                                   VerticalAlignment="Stretch" />
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch" />
             </Border>
-        </Grid>
-        
 
-        <Grid Grid.Column="1">
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="ThinBtn"
+                        Grid.Column="0"
+                        Content="Thin"
+                        Margin="5"
+                        Click="ThinBtn_Click">
+
+                </Button>
+
+                <Button x:Name="ThickBtn"
+                        Grid.Column="1"
+                        Content="Thick"
+                        Margin="5"
+                        Click="ThickBtn_Click">
+
+                </Button>
+
+                <Button x:Name="UndoBtn"
+                        Grid.Column="2"
+                        Content="Undo"
+                        Margin="5"
+                        Click="UndoBtn_Click">
+
+                </Button>
+            </Grid>
+
+        </Grid>
+
+        <Grid  Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="10*" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Button x:Name="ThinBtn"
-                    Grid.Row="0"
-                    Content="Thin"
-                    Click="ThinBtn_Click">
+            <ListBox x:Name="MessagesLst"
+                     Grid.Row="0"
+                     Margin="5">
+                
+            </ListBox>
 
-            </Button>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                
+                <TextBox x:Name="MessageTxt"
+                         Grid.Column="0"
+                         Margin="5">
 
-            <Button x:Name="ThickBtn"
-                    Grid.Row="1"
-                    Content="Thick"
-                    Click="ThickBtn_Click">
+                </TextBox>
 
-            </Button>
+                <Button x:Name="SendBtn"
+                        Grid.Column="1"
+                        Content="Send"
+                        Margin="5"
+                        Click="SendBtn_Click">
 
-            <Button x:Name="UndoBtn"
-                    Grid.Row="2"
-                    Content="Undo"
-                    Click="UndoBtn_Click">
+                </Button>
+            </Grid>
 
-            </Button>
+            
         </Grid>
+
+
     </Grid>
 
 

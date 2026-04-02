@@ -5,11 +5,11 @@ namespace GameLibrary;
 public class Player
 {
     public TcpClient Client { get; set; }
-    public string Username { get; set; }
+    public PlayerData PlayerData { get; set; }
 
-    public Player(TcpClient client, string username)
+    public Player(TcpClient client, PlayerData data)
     {
         Client = client;
-        Username = username;
+        PlayerData = data;
     }
 }

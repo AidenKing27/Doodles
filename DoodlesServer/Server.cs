@@ -1,15 +1,10 @@
 ﻿using GameLibrary;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Windows.Documents;
 
 namespace DoodlesServer;
 
@@ -22,11 +17,10 @@ public class Server
     private List<Player> players = new();
     private bool isRunning;
 
-    public delegate void ServerMessage(string message);
-    public event ServerMessage? ServerMessageEvent;
-    public event ServerMessage? LocalMessageEvent;
-    public event ServerMessage? ConnectMessageEvent;
-    public event ServerMessage? DisconnectMessageEvent;
+    public delegate void ServerMessageHandler(string message);
+    public event ServerMessageHandler? ServerMessageEvent;
+    public event ServerMessageHandler? ConnectMessageEvent;
+    public event ServerMessageHandler? DisconnectMessageEvent;
 
     public Server(int port)
     {
@@ -37,7 +31,7 @@ public class Server
     {
         listener.Start();
         isRunning = true;
-        LocalMessageEvent?.Invoke($"Server Started {listener.LocalEndpoint}");
+        ServerMessageEvent?.Invoke($"Server Started {listener.LocalEndpoint}");
 
         while (isRunning)
         {
@@ -50,7 +44,7 @@ public class Server
 
     private async Task HandleClient(TcpClient client)
     {
-        Player player = new(client, "");
+        Player player = new(client, new PlayerData(""));
         try
         {
             NetworkStream ns = client.GetStream();
@@ -78,13 +72,13 @@ public class Server
                 foreach (string m in allMessages)
                     spool += m;
             }
-            await HandleDisconnect(player);
+            await HandleDisconnect(player, "disconnected from");
         }
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
 
-            await HandleDisconnect(player);
+            await HandleDisconnect(player, "lost connection to");
         }
     }
 
@@ -92,22 +86,20 @@ public class Server
     {
         switch (packet.ContentType)
         {
-            case MessageType.ServerOnly:
+            case ContentType.Message:
+                ServerMessageEvent?.Invoke(packet.Content);
                 break;
 
-            case MessageType.Broadcast:
-                break;
-
-            case MessageType.Connect:
+            case ContentType.Connect:
                 await HandleConnect(packet, player);
                 break;
 
-            case MessageType.Disconnect:
-                await HandleDisconnect(player);
+            case ContentType.Disconnect:
+                await HandleDisconnect(player, "disconnected from");
                 break;
 
-            case MessageType.Doodle:
-                await HandleDoodle();
+            case ContentType.Doodle:
+                HandleDoodle();
                 break;
 
             default:
@@ -117,20 +109,22 @@ public class Server
 
     private async Task HandleConnect(Packet packet, Player player)
     {
-        player.Username = (string)packet.Content;
+        var x = JsonSerializer.Deserialize<PlayerData>(packet.Content);
+        player.PlayerData.Username = x.Username;
         players.Add(player);
 
-        ConnectMessageEvent?.Invoke($"[SERVER]: {player.Username} Connected ({player.Client.Client.RemoteEndPoint})");
+        ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} Connected ({player.Client.Client.RemoteEndPoint})");
         foreach (var client in clients)
-            await BroadcastMessage(client, MessageType.Connect, $"{player.Username} Connected");
+            await BroadcastMessage(client, ContentType.Connect, $"{player.PlayerData.Username} joined the room!");
     }
-    private async Task HandleDisconnect(Player player)
-    {
-        if (player.Username == "") return;
 
-        DisconnectMessageEvent?.Invoke($"[SERVER]: {player.Username} Disconnected ({player.Client.Client.RemoteEndPoint})");
+    private async Task HandleDisconnect(Player player, string message)
+    {
+        if (player.PlayerData.Username == "") return;
+
+        DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} {message} the server ({player.Client.Client.RemoteEndPoint})");
         foreach (var client in clients)
-            await BroadcastMessage(client, MessageType.Disconnect, $"{player.Username} Disconnected");
+            await BroadcastMessage(client, ContentType.Disconnect, $"{player.PlayerData.Username} left the room!");
     }
 
     private async Task HandleDoodle()
@@ -138,22 +132,28 @@ public class Server
 
     }
 
-    public async Task BroadcastMessage(MessageType type, object content)
+    public async Task BroadcastMessage(ContentType type, object content)
     {
-        List<Task> sendTasks = clients.Select(client =>
-            MessageFunctions.SendPacket(client, type, content)).ToList();
+        //List<Task> sendTasks = clients.Select(client =>
+        //    MessageFunctions.SendPacket(client, type, content)).ToList();
 
-        await Task.WhenAll(sendTasks);
+        //await Task.WhenAll(sendTasks);
 
-        //Gotchas in this implementation
-        //  •	clients is a shared mutable list; if clients are added/ removed while broadcasting, this can throw or behave unpredictably.
-        //  •	If any send task fails, Task.WhenAll faults(you’ll need try/catch if you want partial success behavior).
-        //  •	The method sends to all entries in clients, even potentially disconnected ones unless cleanup is handled elsewhere.
+        ////Gotchas in this implementation
+        ////  •	clients is a shared mutable list; if clients are added/ removed while broadcasting, this can throw or behave unpredictably.
+        ////  •	If any send task fails, Task.WhenAll faults(you’ll need try/catch if you want partial success behavior).
+        ////  •	The method sends to all entries in clients, even potentially disconnected ones unless cleanup is handled elsewhere.
     }
 
-    public async Task BroadcastMessage(TcpClient client, MessageType type, object content)
+    public async Task BroadcastMessage(TcpClient client, ContentType type, object content)
     {
         //second method for testing
-        await MessageFunctions.SendPacket(client, type, content);
+        Packet packet = new()
+        {
+            ContentType = type,
+            Content = JsonSerializer.Serialize(content)
+        };
+
+        await MessageFunctions.SendPacket(client, packet);
     }
 }

@@ -9,14 +9,17 @@ public static class MessageFunctions
 {
     private const string DELIM = "<!EOM!>";
 
-    public static async Task SendPacket(TcpClient client, MessageType type, object content)
+    public static Packet CreatePacket(ContentType type, object content)
     {
-        Packet packet = new()
+        return new()
         {
             ContentType = type,
-            Content = content
+            Content = JsonSerializer.Serialize(content)
         };
+    }
 
+    public static async Task SendPacket(TcpClient client, Packet packet)
+    {
         NetworkStream ns = client.GetStream();
         string json = JsonSerializer.Serialize(packet) + DELIM;
         byte[] buffer = Encoding.UTF8.GetBytes(json);

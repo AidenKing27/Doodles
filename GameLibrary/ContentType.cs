@@ -1,9 +1,8 @@
 ﻿namespace GameLibrary;
 
-public enum MessageType
+public enum ContentType
 {
-    ServerOnly,
-    Broadcast,
+    Message,
     Connect,
     Disconnect,
     Doodle

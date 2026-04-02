@@ -1,13 +1,5 @@
-﻿using System.Text;
+﻿using GameLibrary;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace DoodlesClient;
 
@@ -16,6 +8,9 @@ namespace DoodlesClient;
 /// </summary>
 public partial class ClientWindow : Window
 {
+    private Client client;
+    private Player player;
+
     public ClientWindow()
     {
         InitializeComponent();
@@ -28,6 +23,37 @@ public partial class ClientWindow : Window
         Doodler.DoodleMouseUpEvent += DrawingHost_MouseUpCustomEvent;
         Doodler.DoodleUndoEvent += DrawingHost_UndoCustomEvent;
         Doodler.DoodleClearEvent += DrawingHost_DoodleClearEvent;
+
+    }
+
+    private void ConnectBtn_Click(object sender, RoutedEventArgs e)
+    {
+        client = new("172.18.31.102", 55555);
+        client.ClientMessageEvent += Client_ClientMessageEvent;
+        client.ConnectMessageEvent += Client_ConnectMessageEvent;
+        client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
+
+        _ = client.SendMessage(ContentType.Connect, new PlayerData("Aiden"));
+    }
+
+    private void SendBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _ = client.SendMessage(ContentType.Message, MessageTxt.Text);
+    }
+
+    private void Client_ClientMessageEvent(string message)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Client_DisconnectMessageEvent(string message, List<GamePlayer> connectedPlayers)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Client_ConnectMessageEvent(string message, List<GamePlayer> connectedPlayers)
+    {
+        throw new NotImplementedException();
     }
 
     private void DrawingHost_DoodleClearEvent()
@@ -53,4 +79,6 @@ public partial class ClientWindow : Window
     private void ThinBtn_Click(object sender, RoutedEventArgs e) => Doodler.UserThickness = 3;
     private void ThickBtn_Click(object sender, RoutedEventArgs e) => Doodler.UserThickness = 10;
     private void UndoBtn_Click(object sender, RoutedEventArgs e) => Doodler.Undo();
+
+    
 }

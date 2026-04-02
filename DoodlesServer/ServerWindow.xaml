@@ -5,10 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DoodlesServer"
         mc:Ignorable="d"
+        Loaded="Window_Loaded"
         Title="Server"
         Height="450"
         Width="800">
     <Grid>
-
+        <ListBox x:Name="ConsoleLst"
+                 Margin="20">
+            
+        </ListBox>
     </Grid>
 </Window>
