@@ -12,11 +12,11 @@ using System.Windows.Shapes;
 namespace DoodlesServer
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for ServerWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class ServerWindow : Window
     {
-        public MainWindow()
+        public ServerWindow()
         {
             InitializeComponent();
         }

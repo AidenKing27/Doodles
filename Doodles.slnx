@@ -1,5 +1,5 @@
 <Solution>
   <Project Path="DoodlesClient/DoodlesClient.csproj" />
   <Project Path="DoodlesServer/DoodlesServer.csproj" />
-  <Project Path="GameLibrary/GameLibrary.csproj" />
+  <Project Path="GameLibrary/GameLibrary.csproj" Id="4fdc340a-dc21-45dd-8e77-c3ee8e7d962b" />
 </Solution>

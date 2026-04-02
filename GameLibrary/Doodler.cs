@@ -2,7 +2,7 @@
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace DoodlesClient;
+namespace GameLibrary;
 
 public class Doodler : FrameworkElement
 {
