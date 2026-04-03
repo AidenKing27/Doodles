@@ -7,6 +7,7 @@
         xmlns:gl="clr-namespace:GameLibrary;assembly=GameLibrary"
         mc:Ignorable="d"
         Loaded="Window_Loaded"
+        WindowStartupLocation="CenterScreen"
         Title="Doodles"
         Height="450"
         Width="800">
@@ -27,16 +28,17 @@
             <Grid Grid.Row="0">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
                         <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="3*" />
                     </Grid.ColumnDefinitions>
 
                     <Label Content="MAIN"></Label>
-                    <Button x:Name="ConnectBtn"
-                            Grid.Column="1"
-                            Content="Connect"
+
+                    <Button x:Name="DisconnectBtn"
+                            Grid.Column="2"
+                            Content="Disconnect"
                             Margin="5"
-                            Click="ConnectBtn_Click">
+                            Click="DisconnectBtn_Click">
 
                     </Button>
                 </Grid>
@@ -105,6 +107,7 @@
                 
                 <TextBox x:Name="MessageTxt"
                          Grid.Column="0"
+                         MaxLength="30"
                          Margin="5">
 
                 </TextBox>

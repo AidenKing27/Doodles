@@ -6,13 +6,51 @@
         xmlns:local="clr-namespace:DoodlesServer"
         mc:Ignorable="d"
         Loaded="Window_Loaded"
-        Title="Server"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        Background="#1e1e1e"
+        Foreground="White"
         Height="450"
         Width="800">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32"
+                      ResizeBorderThickness="0"
+                      GlassFrameThickness="0"
+                      CornerRadius="0" />
+    </WindowChrome.WindowChrome>
+
     <Grid>
-        <ListBox x:Name="ConsoleLst"
-                 Margin="20">
-            
-        </ListBox>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0"
+              Background="#2d2d2d">
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="10,0">
+                <TextBlock Text="Server"
+                           Foreground="White"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <Button Content="✕"
+                    HorizontalAlignment="Right"
+                    Click="Close_Click"
+                    Style="{StaticResource CloseBtnStyle}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" />
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <ListBox x:Name="ConsoleLst"
+                     Background="#222222"
+                     Foreground="GreenYellow"
+                     Margin="10">
+
+            </ListBox>
+        </Grid>
     </Grid>
 </Window>

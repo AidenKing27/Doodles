@@ -14,9 +14,10 @@ public class Client
 {
     private const string DELIM = "<!EOM!>";
 
+    public GamePlayer Player { get; set; }
     private TcpClient client;
-    private static List<GamePlayer> connectedPlayers;
-    private static Queue<GamePlayer> playerQueue;
+    private static List<GamePlayer> connectedPlayers = new();
+    //private static Queue<GamePlayer> playerQueue;
 
     public delegate void ClientMessageHandler(string message);
     public event ClientMessageHandler? ClientMessageEvent;
@@ -76,7 +77,7 @@ public class Client
         switch (packet.ContentType)
         {
             case ContentType.Message:
-                ClientMessageEvent?.Invoke((string)packet.Content);
+                await HandleMessage(packet);
                 break;
 
             case ContentType.Connect:
@@ -96,26 +97,32 @@ public class Client
         }
     }
 
+    private async Task HandleMessage(Packet packet)
+    {
+        ClientMessageEvent?.Invoke($"{Player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)}");
+    }
+
     private async Task HandleConnect(Packet packet)
     {
-        string newUsername = (string)packet.Content;
-        if (!connectedPlayers.Any(p => p.PlayerData.Username == newUsername))
+        PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
+        if (!connectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
         {
-            PlayerData data = new(newUsername);
-            bool isPlayer = newUsername == "";
-            GamePlayer player = new(data, isPlayer);
-            connectedPlayers.Add(player);
-            ConnectMessageEvent?.Invoke($"{player.PlayerData.Username} Connected", [.. connectedPlayers]);
+            bool isPlayer = newPlayerData.Username == WelcomePage.Username;
+            GamePlayer gamePlayer = new(newPlayerData, isPlayer);
+            connectedPlayers.Add(gamePlayer);
+            ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. connectedPlayers]);
+            if (isPlayer)
+                Player = gamePlayer;
         }
     }
 
     private async Task HandleDisconnect(Packet packet)
     {
-        GamePlayer? disconnectingUser = connectedPlayers.FirstOrDefault(p => p.PlayerData.Username == (string)packet.Content);
+        GamePlayer? disconnectingUser = connectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
         if (disconnectingUser != null)
         {
             connectedPlayers.Remove(disconnectingUser);
-            DisconnectMessageEvent?.Invoke($"{disconnectingUser.PlayerData.Username} Disconnected", [.. connectedPlayers]);
+            DisconnectMessageEvent?.Invoke($"{disconnectingUser.PlayerData.Username} left the room!", [.. connectedPlayers]);
         }
     }
 

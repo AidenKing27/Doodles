@@ -36,4 +36,7 @@ public partial class ServerWindow : Window
     {
         Dispatcher.Invoke(() => ConsoleLst.Items.Add(message));
     }
+
+    private void Close_Click(object sender, RoutedEventArgs e)
+        => Close();
 }

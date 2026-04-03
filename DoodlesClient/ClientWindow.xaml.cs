@@ -9,11 +9,12 @@ namespace DoodlesClient;
 public partial class ClientWindow : Window
 {
     private Client client;
-    private Player player;
+    private readonly string roomCode;
 
-    public ClientWindow()
+    public ClientWindow(string code)
     {
         InitializeComponent();
+        roomCode = code;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -24,16 +25,22 @@ public partial class ClientWindow : Window
         Doodler.DoodleUndoEvent += DrawingHost_UndoCustomEvent;
         Doodler.DoodleClearEvent += DrawingHost_DoodleClearEvent;
 
+        ConnectToRoom();
     }
 
-    private void ConnectBtn_Click(object sender, RoutedEventArgs e)
+    private void ConnectToRoom()
     {
-        client = new("172.18.31.102", 55555);
+        client = new("localhost", 55555);
         client.ClientMessageEvent += Client_ClientMessageEvent;
         client.ConnectMessageEvent += Client_ConnectMessageEvent;
         client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
 
-        _ = client.SendMessage(ContentType.Connect, new PlayerData("Aiden"));
+        _ = client.SendMessage(ContentType.Connect, new PlayerData(WelcomePage.Username, roomCode));
+    }
+
+    private void DisconnectBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _ = client.SendMessage(ContentType.Disconnect, client.Player.PlayerData.Username);
     }
 
     private void SendBtn_Click(object sender, RoutedEventArgs e)
@@ -43,17 +50,17 @@ public partial class ClientWindow : Window
 
     private void Client_ClientMessageEvent(string message)
     {
-        throw new NotImplementedException();
+        Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
     }
 
     private void Client_DisconnectMessageEvent(string message, List<GamePlayer> connectedPlayers)
     {
-        throw new NotImplementedException();
+        Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
     }
 
     private void Client_ConnectMessageEvent(string message, List<GamePlayer> connectedPlayers)
     {
-        throw new NotImplementedException();
+        Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
     }
 
     private void DrawingHost_DoodleClearEvent()

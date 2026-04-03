@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -14,7 +15,8 @@ public class Server
 
     private TcpListener listener;
     private List<TcpClient> clients = new();
-    private List<Player> players = new();
+    private List<Player> allPlayers = new();
+    private Dictionary<string, List<Player>> gameRooms = new();
     private bool isRunning;
 
     public delegate void ServerMessageHandler(string message);
@@ -38,13 +40,13 @@ public class Server
             TcpClient client = await listener.AcceptTcpClientAsync();
             clients.Add(client);
 
-            Task.Run(() => HandleClient(client));
+            _ = Task.Run(() => HandleClient(client));
         }
     }
 
     private async Task HandleClient(TcpClient client)
     {
-        Player player = new(client, new PlayerData(""));
+        Player player = new(client, new PlayerData("", ""));
         try
         {
             NetworkStream ns = client.GetStream();
@@ -87,7 +89,7 @@ public class Server
         switch (packet.ContentType)
         {
             case ContentType.Message:
-                ServerMessageEvent?.Invoke(packet.Content);
+                await HandleMessage(packet, player);
                 break;
 
             case ContentType.Connect:
@@ -99,7 +101,7 @@ public class Server
                 break;
 
             case ContentType.Doodle:
-                HandleDoodle();
+                await HandleDoodle();
                 break;
 
             default:
@@ -107,24 +109,45 @@ public class Server
         }
     }
 
+    private async Task HandleMessage(Packet packet, Player player)
+    {
+        foreach (Player p in gameRooms[player.PlayerData.RoomCode])
+            await BroadcastMessage(p.Client, ContentType.Message, packet);
+
+        ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)!}");
+    }
+
     private async Task HandleConnect(Packet packet, Player player)
     {
-        var x = JsonSerializer.Deserialize<PlayerData>(packet.Content);
-        player.PlayerData.Username = x.Username;
-        players.Add(player);
+        player.PlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
+        allPlayers.Add(player);
 
-        ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} Connected ({player.Client.Client.RemoteEndPoint})");
-        foreach (var client in clients)
-            await BroadcastMessage(client, ContentType.Connect, $"{player.PlayerData.Username} joined the room!");
+        string roomCode = player.PlayerData.RoomCode;
+        if (gameRooms.TryGetValue(roomCode, out List<Player>? value))
+        {
+            value.Add(player);
+            foreach (Player p in value)
+                await BroadcastMessage(p.Client, ContentType.Connect, packet);
+        }
+        else
+        {
+            List<Player> newRoomPlayers = [player];
+            gameRooms.Add(roomCode, newRoomPlayers);
+            foreach (Player p in newRoomPlayers)
+                await BroadcastMessage(p.Client, ContentType.Connect, packet);
+        }
+
+        ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} connected to the server in Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
     }
 
     private async Task HandleDisconnect(Player player, string message)
     {
         if (player.PlayerData.Username == "") return;
 
-        DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} {message} the server ({player.Client.Client.RemoteEndPoint})");
         foreach (var client in clients)
-            await BroadcastMessage(client, ContentType.Disconnect, $"{player.PlayerData.Username} left the room!");
+            await BroadcastMessage(client, ContentType.Disconnect, $"{player.PlayerData.Username}");
+
+        DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} {message} the server ({player.Client.Client.RemoteEndPoint})");
     }
 
     private async Task HandleDoodle()
@@ -148,12 +171,9 @@ public class Server
     public async Task BroadcastMessage(TcpClient client, ContentType type, object content)
     {
         //second method for testing
-        Packet packet = new()
-        {
-            ContentType = type,
-            Content = JsonSerializer.Serialize(content)
-        };
-
-        await MessageFunctions.SendPacket(client, packet);
+        if (content is Packet packet)
+            await MessageFunctions.SendPacket(client, packet);
+        else
+            await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
     }
 }
