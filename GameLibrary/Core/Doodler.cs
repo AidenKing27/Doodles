@@ -6,8 +6,6 @@ namespace GameLibrary.Core;
 
 public class Doodler : FrameworkElement
 {
-    #region Events & Delegates
-
     public delegate void MousePoint(Point p);
     public event MousePoint DoodleMouseDownEvent;
     public event MousePoint DoodleMouseMoveEvent;
@@ -17,18 +15,12 @@ public class Doodler : FrameworkElement
     public event MouseAction DoodleUndoEvent;
     public event MouseAction DoodleClearEvent;
 
-    #endregion Events & Delegates
-
-    #region Properties
-
     public int UserThickness { get; set; } = 3;
     public Brush UserBrush { get; set; } = Brushes.Black;
     public List<DrawingVisual> Doodles { get; set; } = new();
     public DrawingVisual CurrentStroke { get; set; }
     public List<Point> CurrentPoints { get; set; } = new();
     public bool IsDoodling { get; set; }
-
-    #endregion Properties
 
     public Doodler()
     {

@@ -33,7 +33,7 @@ public partial class ClientWindow : Window
 
     private void ConnectToRoom()
     {
-        client = new("localhost", 55555);
+        client = new("localhost", 55555, username);
         client.ClientMessageEvent += Client_ClientMessageEvent;
         client.ConnectMessageEvent += Client_ConnectMessageEvent;
         client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
@@ -49,6 +49,7 @@ public partial class ClientWindow : Window
     private void SendBtn_Click(object sender, RoutedEventArgs e)
     {
         _ = client.SendMessage(ContentType.Message, MessageTxt.Text);
+        MessageTxt.Clear();
     }
 
     private void Client_ClientMessageEvent(string message)
@@ -56,12 +57,12 @@ public partial class ClientWindow : Window
         Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
     }
 
-    private void Client_DisconnectMessageEvent(string message, List<GamePlayer> connectedPlayers)
+    private void Client_DisconnectMessageEvent(string message, List<ClientPlayer> connectedPlayers)
     {
         Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
     }
 
-    private void Client_ConnectMessageEvent(string message, List<GamePlayer> connectedPlayers)
+    private void Client_ConnectMessageEvent(string message, List<ClientPlayer> connectedPlayers)
     {
         Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
     }

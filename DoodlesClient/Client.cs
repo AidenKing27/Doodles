@@ -1,11 +1,8 @@
 ﻿using GameLibrary.Core;
 using GameLibrary.Enums;
 using GameLibrary.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -15,24 +12,26 @@ namespace DoodlesClient;
 public class Client
 {
     private const string DELIM = "<!EOM!>";
+    private string Username = "";
 
-    public GamePlayer Player { get; set; }
+    public ClientPlayer Player { get; set; }
     private TcpClient client;
-    private static List<GamePlayer> connectedPlayers = new();
+    private static List<ClientPlayer> connectedPlayers = new();
     //private static Queue<GamePlayer> playerQueue;
 
     public delegate void ClientMessageHandler(string message);
     public event ClientMessageHandler? ClientMessageEvent;
 
-    public delegate void ClientPlayerHandler(string message, List<GamePlayer> connectedPlayers);
+    public delegate void ClientPlayerHandler(string message, List<ClientPlayer> connectedPlayers);
     public event ClientPlayerHandler? ConnectMessageEvent;
     public event ClientPlayerHandler? DisconnectMessageEvent;
 
     public bool IsConnected => client?.Connected ?? false;
 
-    public Client(string host, int port)
+    public Client(string host, int port, string username)
     {
         client = new(host, port);
+        Username = username;
         Task.Run(() => Receive());
     }
 
@@ -109,8 +108,8 @@ public class Client
         PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
         if (!connectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
         {
-            bool isPlayer = newPlayerData.Username == WelcomePage.Username;
-            GamePlayer gamePlayer = new(newPlayerData, isPlayer);
+            bool isPlayer = newPlayerData.Username == Username;
+            ClientPlayer gamePlayer = new(newPlayerData, isPlayer);
             connectedPlayers.Add(gamePlayer);
             ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. connectedPlayers]);
             if (isPlayer)
@@ -120,7 +119,7 @@ public class Client
 
     private async Task HandleDisconnect(Packet packet)
     {
-        GamePlayer? disconnectingUser = connectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
+        ClientPlayer? disconnectingUser = connectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
         if (disconnectingUser != null)
         {
             connectedPlayers.Remove(disconnectingUser);

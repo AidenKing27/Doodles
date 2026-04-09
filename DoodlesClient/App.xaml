@@ -5,7 +5,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/GameLibrary;component/Styles/SharedStyles.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/GameLibrary;component/WPF/SharedStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

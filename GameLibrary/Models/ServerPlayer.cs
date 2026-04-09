@@ -2,12 +2,12 @@
 
 namespace GameLibrary.Models;
 
-public class Player
+public class ServerPlayer
 {
     public TcpClient Client { get; set; }
     public PlayerData PlayerData { get; set; }
 
-    public Player(TcpClient client, PlayerData data)
+    public ServerPlayer(TcpClient client, PlayerData data)
     {
         Client = client;
         PlayerData = data;

@@ -17,8 +17,8 @@ public class Server
 
     private TcpListener listener;
     private List<TcpClient> clients = new();
-    private List<Player> allPlayers = new();
-    private Dictionary<string, List<Player>> gameRooms = new();
+    private List<ServerPlayer> allPlayers = new();
+    private Dictionary<string, List<ServerPlayer>> gameRooms = new();
     private bool isRunning;
 
     public delegate void ServerMessageHandler(string message);
@@ -48,7 +48,7 @@ public class Server
 
     private async Task HandleClient(TcpClient client)
     {
-        Player player = new(client, new PlayerData("", ""));
+        ServerPlayer player = new(client, new PlayerData("", ""));
         try
         {
             NetworkStream ns = client.GetStream();
@@ -86,7 +86,7 @@ public class Server
         }
     }
 
-    private async Task ProcessPacket(Packet packet, Player player)
+    private async Task ProcessPacket(Packet packet, ServerPlayer player)
     {
         switch (packet.ContentType)
         {
@@ -111,38 +111,38 @@ public class Server
         }
     }
 
-    private async Task HandleMessage(Packet packet, Player player)
+    private async Task HandleMessage(Packet packet, ServerPlayer player)
     {
-        foreach (Player p in gameRooms[player.PlayerData.RoomCode])
+        foreach (ServerPlayer p in gameRooms[player.PlayerData.RoomCode])
             await BroadcastMessage(p.Client, ContentType.Message, packet);
 
         ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)!}");
     }
 
-    private async Task HandleConnect(Packet packet, Player player)
+    private async Task HandleConnect(Packet packet, ServerPlayer player)
     {
         player.PlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
         allPlayers.Add(player);
 
         string roomCode = player.PlayerData.RoomCode;
-        if (gameRooms.TryGetValue(roomCode, out List<Player>? value))
+        if (gameRooms.TryGetValue(roomCode, out List<ServerPlayer>? value))
         {
             value.Add(player);
-            foreach (Player p in value)
+            foreach (ServerPlayer p in value)
                 await BroadcastMessage(p.Client, ContentType.Connect, packet);
         }
         else
         {
-            List<Player> newRoomPlayers = [player];
+            List<ServerPlayer> newRoomPlayers = [player];
             gameRooms.Add(roomCode, newRoomPlayers);
-            foreach (Player p in newRoomPlayers)
+            foreach (ServerPlayer p in newRoomPlayers)
                 await BroadcastMessage(p.Client, ContentType.Connect, packet);
         }
 
         ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} connected to the server in Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
     }
 
-    private async Task HandleDisconnect(Player player, string message)
+    private async Task HandleDisconnect(ServerPlayer player, string message)
     {
         if (player.PlayerData.Username == "") return;
 
