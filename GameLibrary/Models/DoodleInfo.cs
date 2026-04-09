@@ -1,7 +1,8 @@
+using GameLibrary.Enums;
 using System.Windows;
 using System.Windows.Media;
 
-namespace GameLibrary;
+namespace GameLibrary.Models;
 
 public class DoodleInfo
 {

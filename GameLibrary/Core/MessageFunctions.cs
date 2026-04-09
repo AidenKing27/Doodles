@@ -1,9 +1,11 @@
-﻿using System.Net.Sockets;
+﻿using GameLibrary.Enums;
+using GameLibrary.Models;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Interop;
 
-namespace GameLibrary;
+namespace GameLibrary.Core;
 
 public static class MessageFunctions
 {

@@ -1,4 +1,6 @@
-﻿using GameLibrary;
+﻿using GameLibrary.Core;
+using GameLibrary.Enums;
+using GameLibrary.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

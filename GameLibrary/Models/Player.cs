@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
 
-namespace GameLibrary;
+namespace GameLibrary.Models;
 
 public class Player
 {

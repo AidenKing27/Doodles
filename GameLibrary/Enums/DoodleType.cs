@@ -1,4 +1,4 @@
-﻿namespace GameLibrary;
+﻿namespace GameLibrary.Enums;
 
 public enum DoodleType
 {

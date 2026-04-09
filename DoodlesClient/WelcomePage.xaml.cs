@@ -17,8 +17,6 @@ namespace DoodlesClient
     /// </summary>
     public partial class WelcomePage : Window
     {
-        public static string? Username;
-
         public WelcomePage()
         {
             InitializeComponent();
@@ -26,9 +24,7 @@ namespace DoodlesClient
 
         private void JoinBtn_Click(object sender, RoutedEventArgs e)
         {
-            Username = UsernameTxt.Text;
-
-            ClientWindow clientWindow = new(CodeTxt.Text);
+            ClientWindow clientWindow = new(UsernameTxt.Text, CodeTxt.Text);
             clientWindow.Closed += ClientWindow_Closed;
             clientWindow.Show();
             Hide();

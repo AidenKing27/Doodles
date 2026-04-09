@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace GameLibrary;
+namespace GameLibrary.WPF;
 
 public static class PlaceholderBehavior
 {

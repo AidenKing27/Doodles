@@ -1,4 +1,4 @@
-﻿namespace GameLibrary;
+﻿namespace GameLibrary.Models;
 
 public class PlayerData
 {

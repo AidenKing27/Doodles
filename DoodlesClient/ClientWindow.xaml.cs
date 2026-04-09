@@ -1,4 +1,5 @@
-﻿using GameLibrary;
+﻿using GameLibrary.Models;
+using GameLibrary.Enums;
 using System.Windows;
 
 namespace DoodlesClient;
@@ -9,12 +10,14 @@ namespace DoodlesClient;
 public partial class ClientWindow : Window
 {
     private Client client;
+    private readonly string username;
     private readonly string roomCode;
 
-    public ClientWindow(string code)
+    public ClientWindow(string username, string roomCode)
     {
         InitializeComponent();
-        roomCode = code;
+        this.username = username;
+        this.roomCode = roomCode;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -35,7 +38,7 @@ public partial class ClientWindow : Window
         client.ConnectMessageEvent += Client_ConnectMessageEvent;
         client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
 
-        _ = client.SendMessage(ContentType.Connect, new PlayerData(WelcomePage.Username, roomCode));
+        _ = client.SendMessage(ContentType.Connect, new PlayerData(username, roomCode));
     }
 
     private void DisconnectBtn_Click(object sender, RoutedEventArgs e)

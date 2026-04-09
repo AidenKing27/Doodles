@@ -1,4 +1,6 @@
-﻿namespace GameLibrary;
+﻿using GameLibrary.Enums;
+
+namespace GameLibrary.Models;
 
 public class Packet
 {
