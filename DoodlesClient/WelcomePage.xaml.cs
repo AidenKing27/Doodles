@@ -26,6 +26,7 @@ public partial class WelcomePage : Window
         _client.RoomListEvent += Client_RoomListEvent;
 
         _ = _client.SendMessage(ContentType.Connect, new());
+        _ = _client.SendMessage(ContentType.RoomCodes, "");
     }
 
     private void Client_RoomListEvent(List<string> roomCodes)

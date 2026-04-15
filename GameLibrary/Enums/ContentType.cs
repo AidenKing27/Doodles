@@ -4,8 +4,8 @@ public enum ContentType
 {
     Message,
     CreateRoom,
-    Connect,
     PlayerData,
+    Connect,
     Disconnect,
     RoomCodes,
     Doodle

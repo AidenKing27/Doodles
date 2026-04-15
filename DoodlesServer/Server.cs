@@ -18,7 +18,7 @@ public class Server
     private TcpListener _listener;
     private List<TcpClient> _clients = [];
     private List<ServerPlayer> _players = [];
-    private Dictionary<string, Room> _rooms = new();
+    private Dictionary<string, Room> _rooms = [];
     private bool _isRunning;
 
     public delegate void ServerMessageHandler(string message);
@@ -95,20 +95,28 @@ public class Server
                 await HandleMessage(packet, player);
                 break;
 
-            case ContentType.Connect:
-                await HandleConnect(packet, player);
+            case ContentType.CreateRoom:
+                await HandleCreateRoom(packet, player);
                 break;
 
             case ContentType.PlayerData:
                 await HandlePlayerData(packet, player);
                 break;
 
+            case ContentType.Connect:
+                await HandleConnect(packet, player);
+                break;
+
             case ContentType.Disconnect:
                 await HandleDisconnect(player);
                 break;
 
+            case ContentType.RoomCodes:
+                await HandleRoomCodes(player);
+                break;
+
             case ContentType.Doodle:
-                await HandleDoodle();
+                await HandleDoodle(packet);
                 break;
 
             default:
@@ -124,13 +132,9 @@ public class Server
         ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)!}");
     }
 
-    private async Task HandleConnect(Packet packet, ServerPlayer player)
+    private async Task HandleCreateRoom(Packet packet, ServerPlayer player)
     {
-        _players.Add(player);
 
-        ConnectMessageEvent?.Invoke($"[SERVER]: New Player connected to the server ({player.Client.Client.RemoteEndPoint})");
-
-        await BroadcastMessage(player.Client, ContentType.RoomCodes, new List<string>(_rooms.Keys));
     }
 
     private async Task HandlePlayerData(Packet packet, ServerPlayer player)
@@ -153,6 +157,13 @@ public class Server
         //}
 
         ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
+    }
+
+    private async Task HandleConnect(Packet packet, ServerPlayer player)
+    {
+        _players.Add(player);
+
+        ConnectMessageEvent?.Invoke($"[SERVER]: User connected to the server ({player.Client.Client.RemoteEndPoint})");
     }
 
     private async Task HandleDisconnect(ServerPlayer player)
@@ -180,9 +191,23 @@ public class Server
     //    DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} lost connection to the server ({player.Client.Client.RemoteEndPoint})");
     //}
 
-    private async Task HandleDoodle()
+    private async Task HandleRoomCodes(ServerPlayer player)
+    {
+        await BroadcastMessage(player.Client, ContentType.RoomCodes, new List<string>(_rooms.Keys));
+    }
+
+    private async Task HandleDoodle(Packet packet)
     {
 
+    }
+
+    public async Task BroadcastMessage(TcpClient client, ContentType type, object content)
+    {
+        //second method for testing
+        if (content is Packet packet)
+            await MessageFunctions.SendPacket(client, packet);
+        else
+            await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
     }
 
     //public async Task BroadcastMessage(ContentType type, object content)
@@ -197,13 +222,4 @@ public class Server
     //    //  •	If any send task fails, Task.WhenAll faults(you’ll need try/catch if you want partial success behavior).
     //    //  •	The method sends to all entries in clients, even potentially disconnected ones unless cleanup is handled elsewhere.
     //}
-
-    public async Task BroadcastMessage(TcpClient client, ContentType type, object content)
-    {
-        //second method for testing
-        if (content is Packet packet)
-            await MessageFunctions.SendPacket(client, packet);
-        else
-            await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
-    }
 }

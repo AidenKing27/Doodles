@@ -84,12 +84,16 @@ public class Client
                 await HandleMessage(packet);
                 break;
 
-            case ContentType.Connect:
-                await HandleConnect(packet);
+            case ContentType.CreateRoom:
+                await HandleCreateRoom(packet);
                 break;
 
             case ContentType.PlayerData:
                 await HandlePlayerData(packet);
+                break;
+
+            case ContentType.Connect:
+                await HandleConnect(packet);
                 break;
 
             case ContentType.Disconnect:
@@ -101,7 +105,7 @@ public class Client
                 break;
 
             case ContentType.Doodle:
-                await HandleDoodle();
+                await HandleDoodle(packet);
                 break;
 
             default:
@@ -114,18 +118,9 @@ public class Client
         ClientMessageEvent?.Invoke($"{Player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)}");
     }
 
-    private async Task HandleConnect(Packet packet)
+    private async Task HandleCreateRoom(Packet packet)
     {
-        PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
-        if (!connectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
-        {
-            bool isPlayer = newPlayerData.Username == Username;
-            ClientPlayer gamePlayer = new(newPlayerData, isPlayer);
-            connectedPlayers.Add(gamePlayer);
-            ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. connectedPlayers]);
-            if (isPlayer)
-                Player = gamePlayer;
-        }
+
     }
 
     private async Task HandlePlayerData(Packet packet)
@@ -150,6 +145,20 @@ public class Client
         //ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
     }
 
+    private async Task HandleConnect(Packet packet)
+    {
+        PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
+        if (!connectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
+        {
+            bool isPlayer = newPlayerData.Username == Username;
+            ClientPlayer gamePlayer = new(newPlayerData, isPlayer);
+            connectedPlayers.Add(gamePlayer);
+            ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. connectedPlayers]);
+            if (isPlayer)
+                Player = gamePlayer;
+        }
+    }
+
     private async Task HandleDisconnect(Packet packet)
     {
         ClientPlayer? disconnectingUser = connectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
@@ -165,7 +174,7 @@ public class Client
         RoomListEvent?.Invoke(JsonSerializer.Deserialize<List<string>>(packet.Content!)!);
     }
 
-    private async Task HandleDoodle()
+    private async Task HandleDoodle(Packet packet)
     {
 
     }
