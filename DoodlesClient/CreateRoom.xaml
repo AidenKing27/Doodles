@@ -1,31 +1,20 @@
-﻿<Window x:Class="DoodlesClient.WelcomePage"
+﻿<Window x:Class="DoodlesClient.CreateRoom"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DoodlesClient"
         mc:Ignorable="d"
-        Loaded="Window_Loaded"
         WindowStartupLocation="CenterScreen"
-        Title="Welcome"
-        Height="200"
-        Width="400">
+        Title="Create a Room"
+        Height="450"
+        Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-
-        <TextBox x:Name="UsernameTxt"
-                 Grid.Row="0"
-                 Style="{StaticResource PlaceholderTextBox}"
-                 Tag="Enter your name"
-                 MaxLength="16"
-                 Margin="5"
-                 VerticalContentAlignment="Center"
-                 PreviewTextInput="UsernameTxt_PreviewTextInput"
-                 TextChanged="UsernameTxt_TextChanged"/>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -40,20 +29,11 @@
                      MaxLength="5"
                      Margin="5"
                      VerticalContentAlignment="Center" />
-
-            <Button x:Name="JoinBtn"
-                    Grid.Column="1"
-                    Content="Join Room"
-                    Margin="5"
-                    Click="JoinBtn_Click">
-
-            </Button>
-
         </Grid>
 
         <Button x:Name="CreateBtn"
                 Grid.Row="2"
-                Content="Create Private Room"
+                Content="Create Room"
                 Margin="5"
                 Click="CreateBtn_Click">
 

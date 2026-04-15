@@ -9,15 +9,16 @@ namespace DoodlesClient;
 /// </summary>
 public partial class ClientWindow : Window
 {
-    private Client client;
-    private readonly string username;
-    private readonly string roomCode;
+    private readonly Client _client;
+    private readonly string _username;
+    private readonly string _roomCode;
 
-    public ClientWindow(string username, string roomCode)
+    public ClientWindow(string username, string roomCode, Client client)
     {
         InitializeComponent();
-        this.username = username;
-        this.roomCode = roomCode;
+        _username = username;
+        _roomCode = roomCode;
+        _client = client;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -28,27 +29,20 @@ public partial class ClientWindow : Window
         Doodler.DoodleUndoEvent += DrawingHost_UndoCustomEvent;
         Doodler.DoodleClearEvent += DrawingHost_DoodleClearEvent;
 
-        ConnectToRoom();
+        _client.ClientMessageEvent += Client_ClientMessageEvent;
+        _client.ConnectMessageEvent += Client_ConnectMessageEvent;
+        _client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
+
+        _ = _client.SendMessage(ContentType.PlayerData, new PlayerData(_username, _roomCode));
     }
-
-    private void ConnectToRoom()
-    {
-        client = new("localhost", 55555, username);
-        client.ClientMessageEvent += Client_ClientMessageEvent;
-        client.ConnectMessageEvent += Client_ConnectMessageEvent;
-        client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
-
-        _ = client.SendMessage(ContentType.Connect, new PlayerData(username, roomCode));
-    }
-
     private void DisconnectBtn_Click(object sender, RoutedEventArgs e)
     {
-        _ = client.SendMessage(ContentType.Disconnect, client.Player.PlayerData.Username);
+        _ = _client.SendMessage(ContentType.Disconnect, _client.Player.PlayerData.Username);
     }
 
     private void SendBtn_Click(object sender, RoutedEventArgs e)
     {
-        _ = client.SendMessage(ContentType.Message, MessageTxt.Text);
+        _ = _client.SendMessage(ContentType.Message, MessageTxt.Text);
         MessageTxt.Clear();
     }
 
