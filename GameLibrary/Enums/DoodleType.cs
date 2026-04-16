@@ -2,9 +2,9 @@
 
 public enum DoodleType
 {
-    Doodle,
+    Down,
+    Move,
+    Up,
     Undo,
-    Clear,
-    Thickness,
-    Colour
+    Clear
 }

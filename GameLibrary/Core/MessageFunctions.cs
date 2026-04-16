@@ -11,11 +11,11 @@ public static class MessageFunctions
 {
     private const string DELIM = "<!EOM!>";
 
-    public static Packet CreatePacket(ContentType type, object content)
+    public static Packet CreatePacket(PacketType type, object content)
     {
         return new()
         {
-            ContentType = type,
+            Type = type,
             Content = JsonSerializer.Serialize(content)
         };
     }

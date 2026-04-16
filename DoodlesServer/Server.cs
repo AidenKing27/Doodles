@@ -1,6 +1,7 @@
 ﻿using GameLibrary.Core;
 using GameLibrary.Enums;
 using GameLibrary.Models;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -19,6 +20,7 @@ public class Server
     private List<TcpClient> _clients = [];
     private List<ServerPlayer> _players = [];
     private Dictionary<string, Room> _rooms = [];
+    private ConcurrentQueue<DoodleInfo> _doodleQueue = [];
     private bool _isRunning;
 
     public delegate void ServerMessageHandler(string message);
@@ -89,34 +91,34 @@ public class Server
 
     private async Task ProcessPacket(Packet packet, ServerPlayer player)
     {
-        switch (packet.ContentType)
+        switch (packet.Type)
         {
-            case ContentType.Message:
+            case PacketType.Message:
                 await HandleMessage(packet, player);
                 break;
 
-            case ContentType.CreateRoom:
+            case PacketType.CreateRoom:
                 await HandleCreateRoom(packet, player);
                 break;
 
-            case ContentType.PlayerData:
+            case PacketType.PlayerData:
                 await HandlePlayerData(packet, player);
                 break;
 
-            case ContentType.Connect:
+            case PacketType.Connect:
                 await HandleConnect(packet, player);
                 break;
 
-            case ContentType.Disconnect:
+            case PacketType.Disconnect:
                 await HandleDisconnect(player);
                 break;
 
-            case ContentType.RoomCodes:
+            case PacketType.RoomCodes:
                 await HandleRoomCodes(player);
                 break;
 
-            case ContentType.Doodle:
-                await HandleDoodle(packet);
+            case PacketType.Doodle:
+                await HandleDoodle(packet, player);
                 break;
 
             default:
@@ -126,15 +128,20 @@ public class Server
 
     private async Task HandleMessage(Packet packet, ServerPlayer player)
     {
-        foreach (ServerPlayer p in _rooms[player.PlayerData.RoomCode].Players)
-            await BroadcastMessage(p.Client, ContentType.Message, packet);
+        Message message = JsonSerializer.Deserialize<Message>(packet.Content!)!;
 
-        ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)!}");
+        foreach (ServerPlayer p in _rooms[player.PlayerData.RoomCode].Players)
+            await BroadcastMessage(p.Client, PacketType.Message, message);
+
+        ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {message.Sender}: {message.Content}");
     }
 
     private async Task HandleCreateRoom(Packet packet, ServerPlayer player)
     {
-
+        Room newRoom = JsonSerializer.Deserialize<Room>(packet.Content!)!;
+        newRoom.Players = [player];
+        _rooms.Add(newRoom.Code, newRoom);
+        await BroadcastMessage(player.Client, PacketType.Connect, player.PlayerData);
     }
 
     private async Task HandlePlayerData(Packet packet, ServerPlayer player)
@@ -142,21 +149,18 @@ public class Server
         player.PlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
 
         string roomCode = player.PlayerData.RoomCode;
-        if (_rooms.TryGetValue(roomCode, out Room? value))
+        if (_rooms.TryGetValue(roomCode, out Room? room))
         {
-            value.Players.Add(player);
-            foreach (ServerPlayer p in value.Players)
-                await BroadcastMessage(p.Client, ContentType.Connect, packet);
-        }
-        //else
-        //{
-        //    Room newRoom = new([player]);
-        //    _rooms.Add(roomCode, newRoom);
-        //    foreach (ServerPlayer p in newRoom.Players)
-        //        await BroadcastMessage(p.Client, ContentType.Connect, packet);
-        //}
+            room.Players.Add(player);
+            foreach (ServerPlayer p in room.Players)
+                await BroadcastMessage(p.Client, PacketType.Connect, packet);
 
-        ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
+            ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
+        }
+        else
+        {
+            ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} has created and joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
+        }
     }
 
     private async Task HandleConnect(Packet packet, ServerPlayer player)
@@ -171,10 +175,10 @@ public class Server
         if (player.PlayerData.Username == "") return;
 
         string roomCode = player.PlayerData.RoomCode;
-        if (_rooms.TryGetValue(roomCode, out Room? value))
+        if (_rooms.TryGetValue(roomCode, out Room? room))
         {
-            foreach (ServerPlayer p in value.Players)
-                await BroadcastMessage(p.Client, ContentType.Disconnect, $"{player.PlayerData.Username}");
+            foreach (ServerPlayer p in room.Players)
+                await BroadcastMessage(p.Client, PacketType.Disconnect, $"{player.PlayerData.Username}");
         }
 
         DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} disconnected from the server ({player.Client.Client.RemoteEndPoint})");
@@ -185,7 +189,7 @@ public class Server
     //    if (_rooms.TryGetValue(roomCode, out Room? value))
     //    {
     //        foreach (ServerPlayer p in value.Players)
-    //            await BroadcastMessage(p.Client, ContentType.Disconnect, $"{player.PlayerData.Username}");
+    //            await BroadcastMessage(p.Client, PacketType.Disconnect, $"{player.PlayerData.Username}");
     //    }
 
     //    DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} lost connection to the server ({player.Client.Client.RemoteEndPoint})");
@@ -193,15 +197,20 @@ public class Server
 
     private async Task HandleRoomCodes(ServerPlayer player)
     {
-        await BroadcastMessage(player.Client, ContentType.RoomCodes, new List<string>(_rooms.Keys));
+        await BroadcastMessage(player.Client, PacketType.RoomCodes, new List<string>(_rooms.Keys));
     }
 
-    private async Task HandleDoodle(Packet packet)
+    private async Task HandleDoodle(Packet packet, ServerPlayer player)
     {
-
+        _doodleQueue.Enqueue(JsonSerializer.Deserialize<DoodleInfo>(packet.Content!)!);
+        if (_rooms.TryGetValue(player.PlayerData.RoomCode, out Room? room))
+            if (_doodleQueue.TryDequeue(out DoodleInfo? doodleInfo))
+                foreach (ServerPlayer p in room.Players)
+                    if (p.PlayerData.Username != player.PlayerData.Username)
+                        await BroadcastMessage(p.Client, PacketType.Doodle, doodleInfo!);
     }
 
-    public async Task BroadcastMessage(TcpClient client, ContentType type, object content)
+    public async Task BroadcastMessage(TcpClient client, PacketType type, object content)
     {
         //second method for testing
         if (content is Packet packet)
@@ -210,7 +219,7 @@ public class Server
             await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
     }
 
-    //public async Task BroadcastMessage(ContentType type, object content)
+    //public async Task BroadcastMessage(PacketType type, object content)
     //{
     //    List<Task> sendTasks = clients.Select(client =>
     //        MessageFunctions.SendPacket(client, type, content)).ToList();

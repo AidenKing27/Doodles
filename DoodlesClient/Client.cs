@@ -15,7 +15,7 @@ public class Client
     private const string DELIM = "<!EOM!>";
     private string Username = "TESTTESTTEST";
 
-    public ClientPlayer Player { get; set; }
+    public ClientPlayer CurrentClientPlayer { get; set; }
     private TcpClient client;
     private static List<ClientPlayer> connectedPlayers = new();
     //private static Queue<GamePlayer> playerQueue;
@@ -29,6 +29,13 @@ public class Client
     public delegate void ClientPlayerHandler(string message, List<ClientPlayer> connectedPlayers);
     public event ClientPlayerHandler? ConnectMessageEvent;
     public event ClientPlayerHandler? DisconnectMessageEvent;
+
+    public delegate void ClientDoodleHandler(DoodleInfo doodleInfo);
+    public event ClientDoodleHandler? DownEvent;
+    public event ClientDoodleHandler? MoveEvent;
+    public event ClientDoodleHandler? UpEvent;
+    public event ClientDoodleHandler? UndoEvent;
+    public event ClientDoodleHandler? ClearEvent;
 
     public bool IsConnected => client?.Connected ?? false;
 
@@ -78,33 +85,33 @@ public class Client
 
     private async Task ProcessPacket(Packet packet)
     {
-        switch (packet.ContentType)
+        switch (packet.Type)
         {
-            case ContentType.Message:
+            case PacketType.Message:
                 await HandleMessage(packet);
                 break;
 
-            case ContentType.CreateRoom:
+            case PacketType.CreateRoom:
                 await HandleCreateRoom(packet);
                 break;
 
-            case ContentType.PlayerData:
+            case PacketType.PlayerData:
                 await HandlePlayerData(packet);
                 break;
 
-            case ContentType.Connect:
+            case PacketType.Connect:
                 await HandleConnect(packet);
                 break;
 
-            case ContentType.Disconnect:
+            case PacketType.Disconnect:
                 await HandleDisconnect(packet);
                 break;
 
-            case ContentType.RoomCodes:
+            case PacketType.RoomCodes:
                 await HandleRoomCodes(packet);
                 break;
 
-            case ContentType.Doodle:
+            case PacketType.Doodle:
                 await HandleDoodle(packet);
                 break;
 
@@ -115,7 +122,9 @@ public class Client
 
     private async Task HandleMessage(Packet packet)
     {
-        ClientMessageEvent?.Invoke($"{Player.PlayerData.Username}: {JsonSerializer.Deserialize<string>(packet.Content!)}");
+        Message message = JsonSerializer.Deserialize<Message>(packet.Content!)!;
+
+        ClientMessageEvent?.Invoke($"{message.Sender}: {message.Content}");
     }
 
     private async Task HandleCreateRoom(Packet packet)
@@ -125,24 +134,7 @@ public class Client
 
     private async Task HandlePlayerData(Packet packet)
     {
-        //player.PlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
 
-        //string roomCode = player.PlayerData.RoomCode;
-        //if (gameRooms.TryGetValue(roomCode, out List<ServerPlayer>? value))
-        //{
-        //    value.Add(player);
-        //    foreach (ServerPlayer p in value)
-        //        await BroadcastMessage(p.Client, ContentType.Connect, packet);
-        //}
-        //else
-        //{
-        //    List<ServerPlayer> newRoomPlayers = [player];
-        //    gameRooms.Add(roomCode, newRoomPlayers);
-        //    foreach (ServerPlayer p in newRoomPlayers)
-        //        await BroadcastMessage(p.Client, ContentType.Connect, packet);
-        //}
-
-        //ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
     }
 
     private async Task HandleConnect(Packet packet)
@@ -150,12 +142,12 @@ public class Client
         PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
         if (!connectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
         {
-            bool isPlayer = newPlayerData.Username == Username;
-            ClientPlayer gamePlayer = new(newPlayerData, isPlayer);
+            bool isCurrentClientPlayer = newPlayerData.Username == Username;
+            ClientPlayer gamePlayer = new(newPlayerData, isCurrentClientPlayer);
             connectedPlayers.Add(gamePlayer);
             ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. connectedPlayers]);
-            if (isPlayer)
-                Player = gamePlayer;
+            if (isCurrentClientPlayer)
+                CurrentClientPlayer = gamePlayer;
         }
     }
 
@@ -176,13 +168,37 @@ public class Client
 
     private async Task HandleDoodle(Packet packet)
     {
+        DoodleInfo doodleInfo = JsonSerializer.Deserialize<DoodleInfo>(packet.Content!)!;
+        switch (doodleInfo.DoodleType)
+        {
+            case DoodleType.Down:
+                DownEvent?.Invoke(doodleInfo);
+                break;
 
+            case DoodleType.Move:
+                MoveEvent?.Invoke(doodleInfo);
+                break;
+
+            case DoodleType.Up:
+                UpEvent?.Invoke(doodleInfo);
+                break;
+
+            case DoodleType.Undo:
+                UndoEvent?.Invoke(doodleInfo);
+                break;
+
+            case DoodleType.Clear:
+                ClearEvent?.Invoke(doodleInfo);
+                break;
+        }
     }
 
-    public async Task SendMessage(ContentType type, object content)
+    public async Task SendPacket(PacketType type, object content)
     {
-        if (type == ContentType.PlayerData)
+        if (type == PacketType.PlayerData)
             Username = ((PlayerData)content).Username;
+
+        var x = MessageFunctions.CreatePacket(type, content);
 
         await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
     }

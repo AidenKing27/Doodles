@@ -1,6 +1,6 @@
 ﻿namespace GameLibrary.Enums;
 
-public enum ContentType
+public enum PacketType
 {
     Message,
     CreateRoom,

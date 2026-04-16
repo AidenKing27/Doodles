@@ -8,23 +8,27 @@
         mc:Ignorable="d"
         Loaded="Window_Loaded"
         WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
         Title="Doodles"
-        Height="550"
-        Width="1000">
+        Height="720"
+        Width="1280">
 
-    <Grid>
+    <!--Container Grid-->
+    <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2.5*" />
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
 
+        <!--Main Grid-->
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
-                <RowDefinition Height="9*" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="8*" />
+                <RowDefinition Height="1.15*" />
             </Grid.RowDefinitions>
 
+            <!--Header-->
             <Grid Grid.Row="0">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -44,67 +48,75 @@
                 </Grid>
             </Grid>
 
+            <!--Doodler-->
             <Border Grid.Row="1"
                     BorderBrush="Black"
                     BorderThickness="2"
                     Margin="10">
-                <gl:Doodler x:Name="Doodler"
+                <gl:Doodler x:Name="ClientDoodler"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch" />
             </Border>
 
+            <!--Button Grid-->
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="0.4*" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1.2*" />
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="ThinBtn"
-                        Grid.Column="0"
-                        Content="Thin"
-                        Margin="5"
-                        Click="ThinBtn_Click">
+                <!--Selected Colour-->
 
-                </Button>
+                <!--Colours-->
+                <WrapPanel x:Name="ColourPalettePanel"
+                           Grid.Column="1"
+                           MaxWidth="290"
+                           Margin="2" />
 
-                <Button x:Name="ThickBtn"
-                        Grid.Column="1"
-                        Content="Thick"
-                        Margin="5"
-                        Click="ThickBtn_Click">
-
-                </Button>
-
+                <!--Function Buttons-->
                 <Button x:Name="UndoBtn"
                         Grid.Column="2"
                         Content="Undo"
                         Margin="5"
                         Click="UndoBtn_Click">
-
                 </Button>
+                
+                <!--Brush Sizes-->
+                <Grid Grid.Column="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                </Grid>
+                
             </Grid>
 
         </Grid>
 
+        <!--Chat Grid-->
         <Grid  Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="10*" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
+            <!--Chat Log-->
             <ListBox x:Name="MessagesLst"
                      Grid.Row="0"
                      Margin="5">
-                
+
             </ListBox>
 
+            <!--Text Box-->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="3*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                
+
                 <TextBox x:Name="MessageTxt"
                          Grid.Column="0"
                          MaxLength="30"
@@ -121,7 +133,7 @@
                 </Button>
             </Grid>
 
-            
+
         </Grid>
 
 

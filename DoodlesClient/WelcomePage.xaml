@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Loaded="Window_Loaded"
         WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
         Title="Welcome"
         Height="200"
         Width="400">
@@ -25,7 +26,7 @@
                  Margin="5"
                  VerticalContentAlignment="Center"
                  PreviewTextInput="UsernameTxt_PreviewTextInput"
-                 TextChanged="UsernameTxt_TextChanged"/>
+                 TextChanged="UsernameTxt_TextChanged" />
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -39,12 +40,15 @@
                      Tag="Room code"
                      MaxLength="5"
                      Margin="5"
-                     VerticalContentAlignment="Center" />
+                     VerticalContentAlignment="Center"
+                     PreviewTextInput="CodeTxt_PreviewTextInput"
+                     TextChanged="CodeTxt_TextChanged" />
 
             <Button x:Name="JoinBtn"
                     Grid.Column="1"
                     Content="Join Room"
                     Margin="5"
+                    IsEnabled="False"
                     Click="JoinBtn_Click">
 
             </Button>
@@ -55,6 +59,7 @@
                 Grid.Row="2"
                 Content="Create Private Room"
                 Margin="5"
+                IsEnabled="False"
                 Click="CreateBtn_Click">
 
         </Button>

@@ -12,22 +12,11 @@ public class Room
     public int Rounds { get; set; }
     public List<ServerPlayer> Players { get; set; } = [];
 
-    public Room()
-    {
-        
-    }
-
-    public Room(string code, int playerCount, int doodleTime, int rounds, List<ServerPlayer> players)
+    public Room(string code, int playerCount, int doodleTime, int rounds)
     {
         Code = code;
         PlayerCount = playerCount;
         DoodleTime = doodleTime;
         Rounds = rounds;
-        Players = players;
-    }
-
-    public Room(List<ServerPlayer> players)
-    {
-        Players = players;
     }
 }
