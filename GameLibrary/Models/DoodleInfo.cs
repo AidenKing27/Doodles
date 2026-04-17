@@ -7,7 +7,8 @@ namespace GameLibrary.Models;
 public class DoodleInfo
 {
     public DoodleType DoodleType { get; set; }
-    public Point? Point { get; set; }
+    public bool IsErasing { get; set; }
     public int? UserThickness { get; set; }
     public Color? UserColour { get; set; }
+    public Point? Point { get; set; }
 }

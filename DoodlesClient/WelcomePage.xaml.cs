@@ -30,8 +30,8 @@ public partial class WelcomePage : Window
         _client = new("localhost", 55555);
         _client.RoomListEvent += Client_RoomListEvent;
 
-        PacketHelper.SendPacketToServer(_client, PacketType.Connect, new());
-        PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, "");
+        _ = PacketHelper.SendPacketToServer(_client, PacketType.Connect, new());
+        _ = PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, new());
     }
 
     private void Client_RoomListEvent(List<string> roomCodes)
@@ -41,6 +41,7 @@ public partial class WelcomePage : Window
 
     private void JoinBtn_Click(object sender, RoutedEventArgs e)
     {
+        _ = PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, new());
         if (_roomCodes.Contains(_roomCode))
         {
             ClientWindow clientWindow = new(_username, _roomCode, _client);

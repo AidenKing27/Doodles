@@ -91,10 +91,6 @@ public class Client
                 await HandleMessage(packet);
                 break;
 
-            case PacketType.CreateRoom:
-                await HandleCreateRoom(packet);
-                break;
-
             case PacketType.PlayerData:
                 await HandlePlayerData(packet);
                 break;
@@ -125,11 +121,6 @@ public class Client
         Message message = JsonSerializer.Deserialize<Message>(packet.Content!)!;
 
         ClientMessageEvent?.Invoke($"{message.Sender}: {message.Content}");
-    }
-
-    private async Task HandleCreateRoom(Packet packet)
-    {
-
     }
 
     private async Task HandlePlayerData(Packet packet)
@@ -197,8 +188,6 @@ public class Client
     {
         if (type == PacketType.PlayerData)
             Username = ((PlayerData)content).Username;
-
-        var x = MessageFunctions.CreatePacket(type, content);
 
         await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
     }

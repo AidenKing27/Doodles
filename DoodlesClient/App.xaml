@@ -7,6 +7,15 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/GameLibrary;component/WPF/SharedStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Control">
+                <Setter Property="FontFamily" Value="Comic Sans MS" />
+            </Style>
+            <Style TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Comic Sans MS" />
+            </Style>
+            <Style TargetType="TextElement">
+                <Setter Property="FontFamily" Value="Comic Sans MS" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

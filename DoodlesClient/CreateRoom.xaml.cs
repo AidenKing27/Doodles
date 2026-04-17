@@ -27,16 +27,18 @@ public partial class CreateRoom : Window
         _username = username;
     }
 
-    private void CreateBtn_Click(object sender, RoutedEventArgs e)
+    private async void CreateBtn_Click(object sender, RoutedEventArgs e)
     {
         string roomCode = GenerateRoomCode();
-        PlayerData data = new PlayerData(_username, roomCode);
-        PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
-        PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new Room(roomCode, PlayerCount, DoodleTime, NumRounds));
+        PlayerData data = new(_username, roomCode);
 
-        ClientWindow clientWindow = new(_client, data);
+        ClientWindow clientWindow = new(data, _client);
         clientWindow.Closed += ClientWindow_Closed;
         clientWindow.Show();
+
+        _ = PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
+        _ = PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new Room(roomCode, PlayerCount, DoodleTime, NumRounds));
+
         DialogResult = true;
         Hide();
     }
@@ -49,7 +51,8 @@ public partial class CreateRoom : Window
 
         for (int i = 0; i < 5; i++)
             sb.Append(chars[rnd.Next(chars.Length)]);
-        return sb.ToString();
+        //return sb.ToString();
+        return "12345";
     }
 
     private void ClientWindow_Closed(object? sender, EventArgs e) => Application.Current.Shutdown();

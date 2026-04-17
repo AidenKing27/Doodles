@@ -153,7 +153,11 @@ public class Server
         {
             room.Players.Add(player);
             foreach (ServerPlayer p in room.Players)
-                await BroadcastMessage(p.Client, PacketType.Connect, packet);
+            {
+                if (p == player) continue;
+                await BroadcastMessage(p.Client, PacketType.Connect, player.PlayerData);
+                await BroadcastMessage(player.Client, PacketType.Connect, p.PlayerData);
+            }
 
             ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
         }

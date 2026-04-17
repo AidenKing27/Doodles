@@ -10,134 +10,231 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Title="Doodles"
-        Height="720"
-        Width="1280">
+        Height="950"
+        Width="1700">
 
     <!--Container Grid-->
-    <Grid Margin="10">
+    <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2.5*" />
+            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="1000px" />
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
 
-        <!--Main Grid-->
+        <!--Left Grid-->
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="8*" />
-                <RowDefinition Height="1.15*" />
+                <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
 
-            <!--Header-->
-            <Grid Grid.Row="0">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="1*" />
-                    </Grid.ColumnDefinitions>
+            <Label Content="Doodles"
+                   VerticalAlignment="Center"
+                   Margin="10 0 0 0"
+                   FontSize="32">
+            </Label>
 
-                    <Label Content="MAIN"></Label>
-
-                    <Button x:Name="DisconnectBtn"
-                            Grid.Column="2"
-                            Content="Disconnect"
-                            Margin="5"
-                            Click="DisconnectBtn_Click">
-
-                    </Button>
-                </Grid>
-            </Grid>
-
-            <!--Doodler-->
-            <Border Grid.Row="1"
-                    BorderBrush="Black"
-                    BorderThickness="2"
-                    Margin="10">
-                <gl:Doodler x:Name="ClientDoodler"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch" />
-            </Border>
-
-            <!--Button Grid-->
-            <Grid Grid.Row="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0.4*" />
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="1.2*" />
-                </Grid.ColumnDefinitions>
-
-                <!--Selected Colour-->
-
-                <!--Colours-->
-                <WrapPanel x:Name="ColourPalettePanel"
-                           Grid.Column="1"
-                           MaxWidth="290"
-                           Margin="2" />
-
-                <!--Function Buttons-->
-                <Button x:Name="UndoBtn"
-                        Grid.Column="2"
-                        Content="Undo"
+            <!--Player List-->
+            <StackPanel x:Name="PlayerList"
                         Margin="5"
-                        Click="UndoBtn_Click">
-                </Button>
-                
-                <!--Brush Sizes-->
-                <Grid Grid.Column="3">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="1*" />
-                    </Grid.ColumnDefinitions>
-                </Grid>
-                
-            </Grid>
+                        Grid.Row="1"
+                        Orientation="Vertical" />
 
+            <Button x:Name="DisconnectBtn"
+                    Grid.Row="2"
+                    Content="Disconnect"
+                    Margin="5"
+                    Click="DisconnectBtn_Click">
+
+            </Button>
         </Grid>
 
-        <!--Chat Grid-->
-        <Grid  Grid.Column="1">
+        <!--Main Grid-->
+        <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="10*" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
 
-            <!--Chat Log-->
-            <ListBox x:Name="MessagesLst"
-                     Grid.Row="0"
-                     Margin="5">
+            <!-- Doodler + Actions -->
+            <Grid Grid.Row="0"
+                  Margin="5">
+                <Border BorderBrush="Gray"
+                        BorderThickness="1">
+                    <gl:Doodler x:Name="ClientDoodler"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch" />
+                </Border>
 
-            </ListBox>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Height="48"
+                            Margin="0,8,8,0"
+                            Panel.ZIndex="10">
+                    <Button x:Name="UndoBtn"
+                            Content="Undo"
+                            Width="48"
+                            Margin="0,0,5,0"
+                            Click="UndoBtn_Click">
+                    </Button>
+                    <Button x:Name="ClearBtn"
+                            Content="Clear"
+                            Width="48"
+                            Click="ClearBtn_Click">
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-            <!--Text Box-->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="3*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="155px" />
                 </Grid.ColumnDefinitions>
 
+                <!--Actions Row-->
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal">
+
+                    <!--Selected Colour-->
+                    <Image x:Name="SelectedColour"
+                           Margin="5"
+                           Width="70"
+                           Height="70"
+                           Source="pack://application:,,,/Images/Frames/frame_%23000000.png">
+                    </Image>
+
+                    <!--Colours-->
+                    <WrapPanel x:Name="ColourPalettePanel"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Width="340"
+                               Height="70"
+                               MaxWidth="340">
+                    </WrapPanel>
+
+                    <!--Brush Sizes-->
+                    <Button x:Name="ThinBtn"
+                            Margin="5 0 0 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Height="70"
+                            Tag="3"
+                            Click="SetThickness_Event">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/1Thin.png" />
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="FineBtn"
+                            Margin="5 0 0 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Height="70"
+                            Tag="6"
+                            Click="SetThickness_Event">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/2Fine.png" />
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="MediumBtn"
+                            Margin="5 0 0 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Height="70"
+                            Tag="12"
+                            Click="SetThickness_Event">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/3Medium.png" />
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="BoldBtn"
+                            Margin="5 0 0 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Height="70"
+                            Tag="24"
+                            Click="SetThickness_Event">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/4Bold.png" />
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="ThickBtn"
+                            Margin="5 0 0 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Height="70"
+                            Tag="36"
+                            Click="SetThickness_Event">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/5Thick.png" />
+                        </Button.Background>
+                    </Button>
+                </StackPanel>
+
+                <!--Pen Type Buttons-->
+                <StackPanel Grid.Column="1"
+                            Height="70"
+                            Orientation="Horizontal">
+                    <Button x:Name="PencilBtn"
+                            Margin="5 0 0 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Click="PencilBtn_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/pencil.png" />
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="EraseBtn"
+                            Margin="5 0 5 0"
+                            Style="{StaticResource DoodleButtonStyle}"
+                            Width="70"
+                            Click="EraseBtn_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/eraser.png" />
+                        </Button.Background>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!--Right Grid-->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="80px" />
+            </Grid.RowDefinitions>
+
+            <!--Chat-->
+            <ListBox x:Name="MessagesLst"
+                     Margin="5"
+                     Grid.Row="0">
+            </ListBox>
+
+            <!--Text Box Grid-->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="53px" />
+                </Grid.ColumnDefinitions>
+
+                <!--Text Box-->
                 <TextBox x:Name="MessageTxt"
                          Grid.Column="0"
-                         MaxLength="30"
-                         Margin="5">
+                         Margin="5"
+                         MaxLength="30">
 
                 </TextBox>
 
+                <!--Send-->
                 <Button x:Name="SendBtn"
                         Grid.Column="1"
+                        Margin="0 5 5 5"
+                        Width="48"
                         Content="Send"
-                        Margin="5"
                         Click="SendBtn_Click">
-
                 </Button>
             </Grid>
-
-
         </Grid>
-
-
     </Grid>
-
-
 </Window>
