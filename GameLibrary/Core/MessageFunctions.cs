@@ -13,11 +13,7 @@ public static class MessageFunctions
 
     public static Packet CreatePacket(PacketType type, object content)
     {
-        return new()
-        {
-            Type = type,
-            Content = JsonSerializer.Serialize(content)
-        };
+        return new Packet(type, JsonSerializer.Serialize(content));
     }
 
     public static async Task SendPacket(TcpClient client, Packet packet)

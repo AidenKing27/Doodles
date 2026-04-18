@@ -30,14 +30,14 @@ public partial class CreateRoom : Window
     private async void CreateBtn_Click(object sender, RoutedEventArgs e)
     {
         string roomCode = GenerateRoomCode();
-        PlayerData data = new(_username, roomCode);
+        PlayerData data = new(_username, roomCode, true);
 
         ClientWindow clientWindow = new(data, _client);
         clientWindow.Closed += ClientWindow_Closed;
         clientWindow.Show();
 
-        _ = PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
-        _ = PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new Room(roomCode, PlayerCount, DoodleTime, NumRounds));
+        await PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
+        await PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new RoomDto(roomCode, PlayerCount, DoodleTime, NumRounds));
 
         DialogResult = true;
         Hide();

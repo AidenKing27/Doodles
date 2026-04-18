@@ -25,13 +25,13 @@ public partial class WelcomePage : Window
         DataObject.AddPastingHandler(CodeTxt, CodeTxt_Pasting);
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         _client = new("localhost", 55555);
         _client.RoomListEvent += Client_RoomListEvent;
 
-        _ = PacketHelper.SendPacketToServer(_client, PacketType.Connect, new());
-        _ = PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, new());
+        await PacketHelper.SendPacketToServer(_client, PacketType.ServerConnect, new());
+        await PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, new());
     }
 
     private void Client_RoomListEvent(List<string> roomCodes)
@@ -39,9 +39,9 @@ public partial class WelcomePage : Window
         _roomCodes = roomCodes;
     }
 
-    private void JoinBtn_Click(object sender, RoutedEventArgs e)
+    private async void JoinBtn_Click(object sender, RoutedEventArgs e)
     {
-        _ = PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, new());
+        await PacketHelper.SendPacketToServer(_client, PacketType.RoomCodes, new());
         if (_roomCodes.Contains(_roomCode))
         {
             ClientWindow clientWindow = new(_username, _roomCode, _client);

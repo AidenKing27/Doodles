@@ -5,8 +5,9 @@ public enum PacketType
     Message,
     CreateRoom,
     PlayerData,
-    Connect,
+    ServerConnect,
     Disconnect,
     RoomCodes,
-    Doodle
+    Doodle,
+    RoomInfo
 }

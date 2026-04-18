@@ -6,13 +6,16 @@
         xmlns:local="clr-namespace:DoodlesClient"
         xmlns:gl="clr-namespace:GameLibrary.Core;assembly=GameLibrary"
         mc:Ignorable="d"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
         Loaded="Window_Loaded"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Title="Doodles"
         Height="950"
         Width="1700">
-
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
     <!--Container Grid-->
     <Grid>
         <Grid.ColumnDefinitions>
@@ -53,18 +56,47 @@
         <!--Main Grid-->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
+                <RowDefinition Height="50px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
 
+            <!-- Word Hint -->
+            <StackPanel x:Name="WordHint"
+                        Grid.Row="0"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal">
+            </StackPanel>
+
             <!-- Doodler + Actions -->
-            <Grid Grid.Row="0"
+            <Grid x:Name="DoodlerGrid"
+                  Grid.Row="1"
+                  Background="LightGray"
                   Margin="5">
                 <Border BorderBrush="Gray"
                         BorderThickness="1">
                     <gl:Doodler x:Name="ClientDoodler"
                                 HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" />
+                                VerticalAlignment="Stretch">
+                        <gl:Doodler.Style>
+                            <Style TargetType="{x:Type gl:Doodler}">
+                                <Setter Property="IsEnabled"
+                                        Value="False" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsStarted}"
+                                                       Value="True" />
+                                            <Condition Binding="{Binding IsPlayerTurn}"
+                                                       Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsEnabled"
+                                                Value="True" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </gl:Doodler.Style>
+                    </gl:Doodler>
                 </Border>
 
                 <StackPanel Orientation="Horizontal"
@@ -73,21 +105,114 @@
                             Height="48"
                             Margin="0,8,8,0"
                             Panel.ZIndex="10">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility"
+                                    Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsStarted}"
+                                                   Value="True" />
+                                        <Condition Binding="{Binding IsPlayerTurn}"
+                                                   Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility"
+                                            Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <Button x:Name="UndoBtn"
-                            Content="Undo"
+                            Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
                             Margin="0,0,5,0"
                             Click="UndoBtn_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/undo.png" />
+                        </Button.Background>
                     </Button>
                     <Button x:Name="ClearBtn"
-                            Content="Clear"
+                            Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
                             Click="ClearBtn_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/clear.png" />
+                        </Button.Background>
                     </Button>
                 </StackPanel>
+
+                <Button x:Name="StartBtn"
+                        Width="100"
+                        Height="100"
+                        Click="StartBtn_Click">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource DoodleButtonStyle}">
+                            <Setter Property="Visibility"
+                                    Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsHost}"
+                                                   Value="True" />
+                                        <Condition Binding="{Binding IsStarted}"
+                                                   Value="False" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility"
+                                            Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <Button.Background>
+                        <ImageBrush ImageSource="pack://application:,,,/Images/start.png" />
+                    </Button.Background>
+                </Button>
+
+                <TextBlock Text="Waiting for the game to start..."
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           FontSize="32"
+                           Margin="0 0 0 200">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource {x:Type TextBlock}}">
+                            <Setter Property="Visibility"
+                                    Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStarted}"
+                                             Value="True">
+                                    <Setter Property="Visibility"
+                                            Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
             </Grid>
 
+            <!--Actions Grid-->
             <Grid Grid.Row="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility"
+                                Value="Collapsed" />
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsStarted}"
+                                               Value="True" />
+                                    <Condition Binding="{Binding IsPlayerTurn}"
+                                               Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility"
+                                        Value="Visible" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="155px" />

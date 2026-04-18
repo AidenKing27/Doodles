@@ -1,9 +1,12 @@
-﻿using GameLibrary.Models;
+﻿using DoodlesClient.Models;
+using GameLibrary.Core;
 using GameLibrary.Enums;
+using GameLibrary.Models;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using GameLibrary.Core;
 using System.Windows.Media.Imaging;
 
 namespace DoodlesClient;
@@ -11,31 +14,63 @@ namespace DoodlesClient;
 /// <summary>
 /// Interaction logic for ClientWindow.xaml
 /// </summary>
-public partial class ClientWindow : Window
+public partial class ClientWindow : Window, INotifyPropertyChanged
 {
     private readonly Client _client;
     private readonly string _username;
     private readonly string _roomCode;
-    private readonly PlayerData? _data;
+    private List<string> _tempWords = [];
 
+    public bool IsPlayerTurn
+    {
+        get => _client.CurrentClientPlayer?.PlayerData?.IsTurn ?? false;
+        set
+        {
+            var playerData = _client.CurrentClientPlayer?.PlayerData;
+            if (playerData is null) return;
+
+            if (playerData.IsTurn != value)
+                playerData.IsTurn = value;
+
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isStarted;
+    public bool IsStarted
+    {
+        get => _isStarted;
+        set => SetField(ref _isStarted, value);
+    }
+
+    private bool _isHost;
+    public bool IsHost
+    {
+        get => _isHost;
+        set => SetField(ref _isHost, value);
+    }
+
+    // Joined Room
     public ClientWindow(string username, string roomCode, Client client)
     {
         InitializeComponent();
         _client = client;
         _username = username;
         _roomCode = roomCode;
+        IsHost = false;
     }
 
+    // Created Room
     public ClientWindow(PlayerData data, Client client)
     {
         InitializeComponent();
-        _data = data;
         _client = client;
         _username = data.Username;
         _roomCode = data.RoomCode;
+        IsHost = true;
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         BuildPaletteButtons();
 
@@ -48,39 +83,45 @@ public partial class ClientWindow : Window
         _client.ClientMessageEvent += Client_ClientMessageEvent;
         _client.ConnectMessageEvent += Client_ConnectMessageEvent;
         _client.DisconnectMessageEvent += Client_DisconnectMessageEvent;
+
         _client.DownEvent += Client_DownEvent;
         _client.MoveEvent += Client_MoveEvent;
         _client.UpEvent += Client_UpEvent;
         _client.UndoEvent += Client_UndoEvent;
         _client.ClearEvent += Client_ClearEvent;
 
-        if (_data is null)
-            PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, new PlayerData(_username, _roomCode));
+        _client.RoomStartedEvent += Client_RoomStartedEvent;
+        _client.RoomSelectPlayerEvent += Client_RoomSelectPlayerEvent;
+        _client.RoomWordsEvent += Client_RoomWordsEvent;
+
+        // Joined Room
+        if (!IsHost)
+            await PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, new PlayerData(_username, _roomCode, IsHost));
     }
 
-    private void ClientDoodler_DoodleMouseDownEvent(Point p)
+    private async void ClientDoodler_DoodleMouseDownEvent(Point p)
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Doodle, PacketHelper.CreateDoodleInfo(DoodleType.Down, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
+        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Down, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
     }
 
-    private void ClientDoodler_DoodleMouseMoveEvent(Point p)
+    private async void ClientDoodler_DoodleMouseMoveEvent(Point p)
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Doodle, PacketHelper.CreateDoodleInfo(DoodleType.Move, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
+        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Move, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
     }
 
-    private void ClientDoodler_DoodleMouseUpEvent()
+    private async void ClientDoodler_DoodleMouseUpEvent()
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Doodle, PacketHelper.CreateDoodleInfo(DoodleType.Up, ClientDoodler.UserThickness, ClientDoodler.UserColour));
+        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Up, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
-    private void ClientDoodler_DoodleUndoEvent()
+    private async void ClientDoodler_DoodleUndoEvent()
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Doodle, PacketHelper.CreateDoodleInfo(DoodleType.Undo, ClientDoodler.UserThickness, ClientDoodler.UserColour));
+        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Undo, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
-    private void ClientDoodler_DoodleClearEvent()
+    private async void ClientDoodler_DoodleClearEvent()
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Doodle, PacketHelper.CreateDoodleInfo(DoodleType.Clear, ClientDoodler.UserThickness, ClientDoodler.UserColour));
+        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Clear, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private void Client_DownEvent(DoodleInfo doodleInfo)
@@ -110,6 +151,40 @@ public partial class ClientWindow : Window
     private void Client_ClearEvent(DoodleInfo doodleInfo)
     {
         Dispatcher.Invoke(ClientDoodler.PerformClear);
+    }
+
+    private void Client_RoomStartedEvent(RoomInfo info)
+    {
+        if (info.IsStarted is true)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                IsStarted = true;
+                DoodlerGrid.Background = new SolidColorBrush(
+                    (Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
+            });
+        }
+    }
+
+    private void Client_RoomSelectPlayerEvent(RoomInfo info)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            string currentTurnUsername = info.CurrentTurnPlayer.Username;
+
+            foreach (var player in _client.ConnectedPlayers)
+                player.PlayerData.IsTurn = player.PlayerData.Username == currentTurnUsername;
+
+            IsPlayerTurn = _client.CurrentClientPlayer?.PlayerData?.IsTurn ?? false;
+
+            foreach (var card in PlayerList.Children.OfType<PlayerCardControl>())
+                card.UpdateIsDrawing(card.Username == currentTurnUsername);
+        });
+    }
+
+    private void Client_RoomWordsEvent(RoomInfo info)
+    {
+        _tempWords = info.Words!;
     }
 
     private void BuildPaletteButtons()
@@ -179,14 +254,29 @@ public partial class ClientWindow : Window
         ClientDoodler.RequestClear();
     }
 
-    private void DisconnectBtn_Click(object sender, RoutedEventArgs e)
+    private async void StartBtn_Click(object sender, RoutedEventArgs e)
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Disconnect, _client.CurrentClientPlayer.PlayerData.Username);
+        if (_client.ConnectedPlayers.Count > 1)
+        {
+            IsStarted = true;
+            DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
+
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.CreateRoomInfoIsStarted(RoomActionType.Start, _roomCode, IsStarted));
+        }
+        else
+        {
+            MessageBox.Show("Room needs at least 2 players to start game!");
+        }
     }
 
-    private void SendBtn_Click(object sender, RoutedEventArgs e)
+    private async void DisconnectBtn_Click(object sender, RoutedEventArgs e)
     {
-        PacketHelper.SendPacketToServer(_client, PacketType.Message, new Message(_username, MessageTxt.Text));
+        await PacketHelper.SendPacketToServer(_client, PacketType.Disconnect, _client.CurrentClientPlayer.PlayerData.Username);
+    }
+
+    private async void SendBtn_Click(object sender, RoutedEventArgs e)
+    {
+        await PacketHelper.SendPacketToServer(_client, PacketType.Message, new Message(_username, MessageTxt.Text));
         MessageTxt.Clear();
     }
 
@@ -211,12 +301,25 @@ public partial class ClientWindow : Window
     {
         PlayerList.Children.Clear();
 
-        foreach (var player in connectedPlayers)
+        foreach (ClientPlayer player in connectedPlayers)
         {
             PlayerCardControl card = new();
-            card.SetInfo(0, player.PlayerData.Username, player.PlayerData.Score, true);
+            card.SetInfo(player.PlayerData.IsHost, 0, player.PlayerData.Username, player.PlayerData.Score, false);
 
             PlayerList.Children.Add(card);
         }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
+    {
+        if (Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(name);
+        return true;
     }
 }

@@ -14,6 +14,7 @@ public partial class PlayerCardControl : UserControl, INotifyPropertyChanged
     private string _username = "Username";
     private string _score = "Points: 0";
     private bool _isDrawing;
+    private bool _isHost;
 
     public string Rank
     {
@@ -39,25 +40,40 @@ public partial class PlayerCardControl : UserControl, INotifyPropertyChanged
         set => SetField(ref _isDrawing, value);
     }
 
+    public bool IsHost
+    {
+        get => _isHost;
+        set => SetField(ref _isHost, value);
+    }
+
     public PlayerCardControl()
     {
         InitializeComponent();
         DataContext = this;
     }
 
-    public void SetInfo(int rank, string username, int score, bool isDrawing)
+    public void SetInfo(bool isHost, int rank, string username, int score, bool isDrawing)
     {
+        IsHost = isHost;
         Rank = $"#{rank}";
         Username = username;
         Score = $"Points: {score}";
         IsDrawing = isDrawing;
     }
 
-    public void UpdateInfo(int rank, int score, bool isDrawing)
+    public void UpdateIsDrawing(bool isDrawing)
+    {
+        IsDrawing = isDrawing;
+    }
+
+    public void UpdateRank(int rank)
     {
         Rank = $"#{rank}";
+    }
+
+    public void UpdateScore(int score)
+    {
         Score = $"Points: {score}";
-        IsDrawing = isDrawing;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

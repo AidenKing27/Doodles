@@ -8,13 +8,13 @@ namespace GameLibrary.Core;
 public class Doodler : FrameworkElement
 {
     public delegate void PointHandler(Point p);
-    public event PointHandler DoodleMouseDownEvent;
-    public event PointHandler DoodleMouseMoveEvent;
+    public event PointHandler? DoodleMouseDownEvent;
+    public event PointHandler? DoodleMouseMoveEvent;
 
     public delegate void ActionHandler();
-    public event ActionHandler DoodleMouseUpEvent;
-    public event ActionHandler DoodleUndoEvent;
-    public event ActionHandler DoodleClearEvent;
+    public event ActionHandler? DoodleMouseUpEvent;
+    public event ActionHandler? DoodleUndoEvent;
+    public event ActionHandler? DoodleClearEvent;
 
     //public delegate void PencilEraseHandler(bool isErasing);
     //public event PencilEraseHandler DoodlePencilEraseEvent;

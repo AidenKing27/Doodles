@@ -21,13 +21,30 @@
             <ColumnDefinition Width="58px" />
         </Grid.ColumnDefinitions>
 
-        <Label x:Name="RankLbl"
-               Grid.Column="0"
-               Content="{Binding Rank}"
-               FontSize="16"
-               VerticalAlignment="Top"
-               HorizontalAlignment="Left">
-        </Label>
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="1.5*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="RankLbl"
+                       Grid.Column="0"
+                       Text="#1"
+                       Padding="0"
+                       FontSize="16"
+                       VerticalAlignment="Top"
+                       HorizontalAlignment="Left">
+            </TextBlock>
+
+            <Image x:Name="IsHostPic"
+                   Width="24"
+                   Height="24"
+                   Source="pack://application:,,,/Images/host.png"
+                   Visibility="{Binding IsHost, Converter={StaticResource BoolToVisibility}}"
+                   Margin="0,20,34,14"
+                   Grid.RowSpan="2">
+            </Image>
+        </Grid>
 
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
@@ -47,7 +64,8 @@
                        Grid.Row="1"
                        Text="{Binding Score}"
                        FontSize="14"
-                       Padding="0"/>
+                       Padding="0">
+            </TextBlock>
 
         </Grid>
 

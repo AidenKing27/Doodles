@@ -2,8 +2,8 @@
 
 namespace GameLibrary.Models;
 
-public class Packet
+public class Packet(PacketType type, string? content = null)
 {
-    public PacketType Type { get; set; }
-    public string? Content { get; set; }
+    public PacketType Type { get; set; } = type;
+    public string? Content { get; set; } = content;
 }

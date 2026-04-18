@@ -1,4 +1,5 @@
-﻿using GameLibrary.Core;
+﻿using DoodlesClient.Models;
+using GameLibrary.Core;
 using GameLibrary.Enums;
 using GameLibrary.Models;
 using System.Diagnostics;
@@ -13,11 +14,11 @@ namespace DoodlesClient;
 public class Client
 {
     private const string DELIM = "<!EOM!>";
-    private string Username = "TESTTESTTEST";
+    private string Username = string.Empty;
 
     public ClientPlayer CurrentClientPlayer { get; set; }
     private TcpClient client;
-    private static List<ClientPlayer> connectedPlayers = new();
+    public List<ClientPlayer> ConnectedPlayers = new();
     //private static Queue<GamePlayer> playerQueue;
 
     public delegate void ClientRoomHandler(List<string> roomCodes);
@@ -36,6 +37,11 @@ public class Client
     public event ClientDoodleHandler? UpEvent;
     public event ClientDoodleHandler? UndoEvent;
     public event ClientDoodleHandler? ClearEvent;
+
+    public delegate void ClientRoomInfoHandler(RoomInfo info);
+    public event ClientRoomInfoHandler? RoomStartedEvent;
+    public event ClientRoomInfoHandler? RoomSelectPlayerEvent;
+    public event ClientRoomInfoHandler? RoomWordsEvent;
 
     public bool IsConnected => client?.Connected ?? false;
 
@@ -95,10 +101,6 @@ public class Client
                 await HandlePlayerData(packet);
                 break;
 
-            case PacketType.Connect:
-                await HandleConnect(packet);
-                break;
-
             case PacketType.Disconnect:
                 await HandleDisconnect(packet);
                 break;
@@ -109,6 +111,10 @@ public class Client
 
             case PacketType.Doodle:
                 await HandleDoodle(packet);
+                break;
+
+            case PacketType.RoomInfo:
+                await HandleRoomInfo(packet);
                 break;
 
             default:
@@ -125,18 +131,13 @@ public class Client
 
     private async Task HandlePlayerData(Packet packet)
     {
-
-    }
-
-    private async Task HandleConnect(Packet packet)
-    {
         PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
-        if (!connectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
+        if (!ConnectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
         {
             bool isCurrentClientPlayer = newPlayerData.Username == Username;
             ClientPlayer gamePlayer = new(newPlayerData, isCurrentClientPlayer);
-            connectedPlayers.Add(gamePlayer);
-            ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. connectedPlayers]);
+            ConnectedPlayers.Add(gamePlayer);
+            ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. ConnectedPlayers]);
             if (isCurrentClientPlayer)
                 CurrentClientPlayer = gamePlayer;
         }
@@ -144,11 +145,11 @@ public class Client
 
     private async Task HandleDisconnect(Packet packet)
     {
-        ClientPlayer? disconnectingUser = connectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
+        ClientPlayer? disconnectingUser = ConnectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
         if (disconnectingUser != null)
         {
-            connectedPlayers.Remove(disconnectingUser);
-            DisconnectMessageEvent?.Invoke($"{disconnectingUser.PlayerData.Username} left the room!", [.. connectedPlayers]);
+            ConnectedPlayers.Remove(disconnectingUser);
+            DisconnectMessageEvent?.Invoke($"{disconnectingUser.PlayerData.Username} left the room!", [.. ConnectedPlayers]);
         }
     }
 
@@ -180,6 +181,31 @@ public class Client
 
             case DoodleType.Clear:
                 ClearEvent?.Invoke(doodleInfo);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    private async Task HandleRoomInfo(Packet packet)
+    {
+        RoomInfo roomInfo = JsonSerializer.Deserialize<RoomInfo>(packet.Content!)!;
+        switch (roomInfo.RoomActionType)
+        {
+            case RoomActionType.Start:
+                RoomStartedEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.SelectPlayer:
+                RoomSelectPlayerEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.Words:
+                RoomWordsEvent?.Invoke(roomInfo);
+                break;
+
+            default:
                 break;
         }
     }
