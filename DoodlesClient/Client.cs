@@ -14,7 +14,7 @@ namespace DoodlesClient;
 public class Client
 {
     private const string DELIM = "<!EOM!>";
-    private string Username = string.Empty;
+    private Guid _currentPlayerGuid;
 
     public ClientPlayer CurrentClientPlayer { get; set; }
     private TcpClient client;
@@ -39,12 +39,13 @@ public class Client
     public event ClientDoodleHandler? ClearEvent;
 
     public delegate void ClientRoomInfoHandler(RoomInfo info);
-    public event ClientRoomInfoHandler? RoomStartedEvent;
+    public event ClientRoomInfoHandler? RoomGameStartedEvent;
     public event ClientRoomInfoHandler? RoomSelectPlayerEvent;
     public event ClientRoomInfoHandler? RoomWordsEvent;
     public event ClientRoomInfoHandler? RoomRoundStartEvent;
     public event ClientRoomInfoHandler? RoomRevealLetterEvent;
     public event ClientRoomInfoHandler? RoomRoundEndEvent;
+    public event ClientRoomInfoHandler? RoomRankUpdateEvent;
 
     public bool IsConnected => client?.Connected ?? false;
 
@@ -96,16 +97,17 @@ public class Client
     {
         switch (packet.Type)
         {
+
+            case PacketType.Disconnect:
+                await HandleDisconnect(packet);
+                break;
+
             case PacketType.Message:
                 await HandleMessage(packet);
                 break;
 
             case PacketType.PlayerData:
                 await HandlePlayerData(packet);
-                break;
-
-            case PacketType.Disconnect:
-                await HandleDisconnect(packet);
                 break;
 
             case PacketType.RoomCodes:
@@ -125,6 +127,17 @@ public class Client
         }
     }
 
+    private async Task HandleDisconnect(Packet packet)
+    {
+        PlayerData disconnectingPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
+        ClientPlayer? disconnectingUser = ConnectedPlayers.FirstOrDefault(p => p.PlayerData.GUID == disconnectingPlayerData.GUID);
+        if (disconnectingUser != null)
+        {
+            ConnectedPlayers.Remove(disconnectingUser);
+            DisconnectMessageEvent?.Invoke($"{disconnectingUser.PlayerData.Username} left the room!", [.. ConnectedPlayers]);
+        }
+    }
+
     private async Task HandleMessage(Packet packet)
     {
         Message message = JsonSerializer.Deserialize<Message>(packet.Content!)!;
@@ -135,9 +148,9 @@ public class Client
     private async Task HandlePlayerData(Packet packet)
     {
         PlayerData newPlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
-        if (!ConnectedPlayers.Any(p => p.PlayerData.Username == newPlayerData.Username))
+        if (!ConnectedPlayers.Any(p => p.PlayerData.GUID == newPlayerData.GUID))
         {
-            bool isCurrentClientPlayer = newPlayerData.Username == Username;
+            bool isCurrentClientPlayer = newPlayerData.GUID == _currentPlayerGuid;
             ClientPlayer gamePlayer = new(newPlayerData, isCurrentClientPlayer);
             ConnectedPlayers.Add(gamePlayer);
             ConnectMessageEvent?.Invoke($"{gamePlayer.PlayerData.Username} joined the room!", [.. ConnectedPlayers]);
@@ -146,19 +159,47 @@ public class Client
         }
     }
 
-    private async Task HandleDisconnect(Packet packet)
-    {
-        ClientPlayer? disconnectingUser = ConnectedPlayers.FirstOrDefault(p => p.PlayerData.Username == JsonSerializer.Deserialize<string>(packet.Content!));
-        if (disconnectingUser != null)
-        {
-            ConnectedPlayers.Remove(disconnectingUser);
-            DisconnectMessageEvent?.Invoke($"{disconnectingUser.PlayerData.Username} left the room!", [.. ConnectedPlayers]);
-        }
-    }
-
     private async Task HandleRoomCodes(Packet packet)
     {
         RoomListEvent?.Invoke(JsonSerializer.Deserialize<List<string>>(packet.Content!)!);
+    }
+
+    private async Task HandleRoomInfo(Packet packet)
+    {
+        RoomInfo roomInfo = JsonSerializer.Deserialize<RoomInfo>(packet.Content!)!;
+        switch (roomInfo.RoomActionType)
+        {
+            case RoomActionType.Start:
+                RoomGameStartedEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.SelectPlayer:
+                RoomSelectPlayerEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.WordList:
+                RoomWordsEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.RoundStart:
+                RoomRoundStartEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.RevealedLetter:
+                RoomRevealLetterEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.RoundEnd:
+                RoomRoundEndEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.RoomUpdate:
+                RoomRankUpdateEvent?.Invoke(roomInfo);
+                break;
+
+            default:
+                break;
+        }
     }
 
     private async Task HandleDoodle(Packet packet)
@@ -191,44 +232,10 @@ public class Client
         }
     }
 
-    private async Task HandleRoomInfo(Packet packet)
-    {
-        RoomInfo roomInfo = JsonSerializer.Deserialize<RoomInfo>(packet.Content!)!;
-        switch (roomInfo.RoomActionType)
-        {
-            case RoomActionType.Start:
-                RoomStartedEvent?.Invoke(roomInfo);
-                break;
-
-            case RoomActionType.SelectPlayer:
-                RoomSelectPlayerEvent?.Invoke(roomInfo);
-                break;
-
-            case RoomActionType.WordList:
-                RoomWordsEvent?.Invoke(roomInfo);
-                break;
-
-            case RoomActionType.RoundStart:
-                RoomRoundStartEvent?.Invoke(roomInfo);
-                break;
-
-            case RoomActionType.RevealedLetter:
-                RoomRevealLetterEvent?.Invoke(roomInfo);
-                break;
-
-            case RoomActionType.RoundEnd:
-                RoomRoundStartEvent?.Invoke(roomInfo);
-                break;
-
-            default:
-                break;
-        }
-    }
-
     public async Task SendPacket(PacketType type, object content)
     {
         if (type == PacketType.PlayerData)
-            Username = ((PlayerData)content).Username;
+            _currentPlayerGuid = ((PlayerData)content).GUID;
 
         await MessageFunctions.SendPacket(client, MessageFunctions.CreatePacket(type, content));
     }

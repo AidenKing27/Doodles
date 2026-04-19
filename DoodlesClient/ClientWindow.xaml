@@ -57,7 +57,7 @@
         <!--Main Grid-->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="50px" />
+                <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
@@ -67,24 +67,8 @@
                         Grid.Row="0"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Orientation="Horizontal">
-
-                <TextBlock Text="_"
-                           Margin="5 0 5 0"
-                           FontSize="20"></TextBlock>
-                <TextBlock Text="_"
-                           Margin="5 0 5 0"
-                           FontSize="20"></TextBlock>
-                <TextBlock Text="_"
-                           Margin="5 0 5 0"
-                           FontSize="20"></TextBlock>
-                <TextBlock Text="_"
-                           Margin="5 0 5 0"
-                           FontSize="20"></TextBlock>
-                <TextBlock Text="_"
-                           Margin="5 0 5 0"
-                           FontSize="20"></TextBlock>
-
+                        Orientation="Horizontal"
+                        Visibility="{Binding IsGameStarted, Converter={StaticResource BoolToVisibility}}">
             </StackPanel>
 
             <!-- Doodler + Actions -->
@@ -92,12 +76,13 @@
                   Grid.Row="1"
                   Background="LightGray"
                   Margin="5">
-                <Border BorderBrush="Gray"
+                <Border BorderBrush="#C3C3C3"
                         BorderThickness="1">
                     <gl:Doodler x:Name="ClientDoodler"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"
-                                Style="{StaticResource PlayerTurnDoodlerEnabledStyle}" />
+                                Style="{StaticResource PlayerTurnDoodlerEnabledStyle}">
+                    </gl:Doodler>
                 </Border>
 
                 <StackPanel Orientation="Horizontal"
@@ -107,7 +92,7 @@
                             Margin="0,8,8,0"
                             Panel.ZIndex="10"
                             Style="{StaticResource PlayerTurnVisibleStyle}">
-                    
+
                     <Button x:Name="UndoBtn"
                             Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
@@ -117,7 +102,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/undo.png" />
                         </Button.Background>
                     </Button>
-                    
+
                     <Button x:Name="ClearBtn"
                             Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
@@ -126,7 +111,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/clear.png" />
                         </Button.Background>
                     </Button>
-                    
+
                 </StackPanel>
 
                 <Button x:Name="StartBtn"
@@ -151,6 +136,7 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Orientation="Vertical"
+                            Style="{StaticResource WordPanelVisibleStyle}"
                             Margin="0 0 0 100">
 
                     <TextBlock Text="Choose a word"
@@ -165,13 +151,22 @@
                                 VerticalAlignment="Center"
                                 Orientation="Horizontal">
                     </StackPanel>
-                    
+
                 </StackPanel>
+
+                <TextBlock x:Name="NonPlayerInfoTextLbl"
+                           Text="{Binding NonPlayerInfoText}"
+                           FontSize="32"
+                           Margin="0 0 0 100"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Style="{StaticResource NonPlayerInfoVisibleStyle}">
+                </TextBlock>
 
             </Grid>
 
             <!--Actions Grid-->
-            <Grid Grid.Row="1">
+            <Grid Grid.Row="2">
                 <Grid.Style>
                     <Style TargetType="Grid"
                            BasedOn="{StaticResource PlayerTurnVisibleStyle}" />
@@ -298,6 +293,7 @@
         <!--Right Grid-->
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
+                <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
@@ -305,11 +301,12 @@
             <!--Chat-->
             <ListBox x:Name="MessagesLst"
                      Margin="5"
-                     Grid.Row="0">
+                     FontSize="16"
+                     Grid.Row="1">
             </ListBox>
 
             <!--Text Box Grid-->
-            <Grid Grid.Row="1">
+            <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="53px" />

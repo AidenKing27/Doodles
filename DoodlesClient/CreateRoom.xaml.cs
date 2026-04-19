@@ -37,7 +37,7 @@ public partial class CreateRoom : Window
         clientWindow.Show();
 
         await PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
-        await PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new RoomDto(roomCode, MaxPlayerCount, DoodleTime, NumRounds));
+        await PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new CreateRoomDto(roomCode, MaxPlayerCount, DoodleTime, NumRounds));
 
         DialogResult = true;
         Hide();

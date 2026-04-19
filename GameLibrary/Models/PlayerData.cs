@@ -2,6 +2,7 @@
 
 public class PlayerData(string username, string roomCode, bool isHost)
 {
+    public Guid GUID { get; set; } = Guid.NewGuid();
     public string Username { get; set; } = username;
     public string RoomCode { get; set; } = roomCode;
     public int Score { get; set; }
@@ -10,5 +11,8 @@ public class PlayerData(string username, string roomCode, bool isHost)
     public bool IsTurn { get; set; }
     public bool IsHost { get; set; } = isHost;
 
-    public PlayerData() : this(string.Empty, string.Empty, false) { }
+    public PlayerData() : this(string.Empty, string.Empty, false)
+    {
+        GUID = Guid.Empty;
+    }
 }

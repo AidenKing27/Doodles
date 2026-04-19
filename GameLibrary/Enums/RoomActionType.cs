@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GameLibrary.Enums;
+﻿namespace GameLibrary.Enums;
 
 public enum RoomActionType
 {
@@ -12,5 +8,7 @@ public enum RoomActionType
     ChosenWord,
     RevealedLetter,
     RoundStart,
-    RoundEnd
+    RoundEnd,
+    Guess,
+    RoomUpdate
 }

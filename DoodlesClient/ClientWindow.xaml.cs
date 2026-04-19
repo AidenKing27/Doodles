@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace DoodlesClient;
 
@@ -20,6 +19,8 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     private readonly Client _client;
     private readonly string _username;
     private readonly string _roomCode;
+    private Guid _currentTurnPlayerGuid;
+    private string _currentTurnUsername;
 
     public bool IsPlayerTurn
     {
@@ -36,11 +37,25 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private bool _isStarted;
-    public bool IsStarted
+    private bool _isGameStarted;
+    public bool IsGameStarted
     {
-        get => _isStarted;
-        set => SetField(ref _isStarted, value);
+        get => _isGameStarted;
+        set => SetField(ref _isGameStarted, value);
+    }
+
+    private bool _isRoundStarted;
+    public bool IsRoundActive
+    {
+        get => _isRoundStarted;
+        set => SetField(ref _isRoundStarted, value);
+    }
+
+    private bool _showWords;
+    public bool ShowWords
+    {
+        get => _showWords;
+        set => SetField(ref _showWords, value);
     }
 
     private bool _isHost;
@@ -50,24 +65,31 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         set => SetField(ref _isHost, value);
     }
 
+    private string _nonPlayerInfoText;
+    public string NonPlayerInfoText
+    {
+        get => _nonPlayerInfoText;
+        set => SetField(ref _nonPlayerInfoText, value);
+    }
+
     // Joined Room
     public ClientWindow(string username, string roomCode, Client client)
     {
-        InitializeComponent();
         _client = client;
         _username = username;
         _roomCode = roomCode;
         IsHost = false;
+        InitializeComponent();
     }
 
     // Created Room
     public ClientWindow(PlayerData data, Client client)
     {
-        InitializeComponent();
         _client = client;
         _username = data.Username;
         _roomCode = data.RoomCode;
         IsHost = true;
+        InitializeComponent();
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -90,12 +112,13 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         _client.UndoEvent += Client_UndoEvent;
         _client.ClearEvent += Client_ClearEvent;
 
-        _client.RoomStartedEvent += Client_RoomStartedEvent;
+        _client.RoomGameStartedEvent += Client_RoomGameStartedEvent;
         _client.RoomSelectPlayerEvent += Client_RoomSelectPlayerEvent;
         _client.RoomWordsEvent += Client_RoomWordsEvent;
         _client.RoomRoundStartEvent += Client_RoomRoundStartEvent;
         _client.RoomRevealLetterEvent += Client_RoomRevealLetterEvent;
         _client.RoomRoundEndEvent += Client_RoomRoundEndEvent;
+        _client.RoomRankUpdateEvent += Client_RoomRankUpdateEvent;
 
         // Joined Room
         if (!IsHost)
@@ -109,55 +132,61 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     private async void ClientDoodler_DoodleMouseDownEvent(Point p)
     {
         await PacketHelper.SendPacketToServer(
-            _client, PacketType.Doodle, 
-            DoodleInfo.SendDoodleInfo(DoodleType.Down, 
+            _client, PacketType.Doodle,
+            DoodleInfo.SendDoodleInfo(DoodleType.Down,
             ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
     }
 
     private async void ClientDoodler_DoodleMouseMoveEvent(Point p)
     {
         await PacketHelper.SendPacketToServer(
-            _client, 
-            PacketType.Doodle, 
+            _client,
+            PacketType.Doodle,
             DoodleInfo.SendDoodleInfo(DoodleType.Move, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
     }
 
     private async void ClientDoodler_DoodleMouseUpEvent()
     {
         await PacketHelper.SendPacketToServer(
-            _client, 
-            PacketType.Doodle, 
+            _client,
+            PacketType.Doodle,
             DoodleInfo.SendDoodleInfo(DoodleType.Up, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private async void ClientDoodler_DoodleUndoEvent()
     {
         await PacketHelper.SendPacketToServer(
-            _client, 
-            PacketType.Doodle, 
+            _client,
+            PacketType.Doodle,
             DoodleInfo.SendDoodleInfo(DoodleType.Undo, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private async void ClientDoodler_DoodleClearEvent()
     {
         await PacketHelper.SendPacketToServer(
-            _client, 
-            PacketType.Doodle, 
+            _client,
+            PacketType.Doodle,
             DoodleInfo.SendDoodleInfo(DoodleType.Clear, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private void Client_DownEvent(DoodleInfo doodleInfo)
     {
-        Dispatcher.Invoke(() => ClientDoodler.UserThickness = (int)doodleInfo.UserThickness!);
-        Dispatcher.Invoke(() => ClientDoodler.UserColour = (Color)doodleInfo.UserColour!);
-        Dispatcher.Invoke(() => ClientDoodler.StartStrokeAt((Point)doodleInfo.Point!));
+        Dispatcher.Invoke(() =>
+        {
+            ClientDoodler.UserThickness = (int)doodleInfo.UserThickness!;
+            ClientDoodler.UserColour = (Color)doodleInfo.UserColour!;
+            ClientDoodler.StartStrokeAt((Point)doodleInfo.Point!);
+        });
     }
 
     private void Client_MoveEvent(DoodleInfo doodleInfo)
     {
-        Dispatcher.Invoke(() => ClientDoodler.UserThickness = (int)doodleInfo.UserThickness!);
-        Dispatcher.Invoke(() => ClientDoodler.UserColour = (Color)doodleInfo.UserColour!);
-        Dispatcher.Invoke(() => ClientDoodler.ContinueStrokeAt((Point)doodleInfo.Point!));
+        Dispatcher.Invoke(() =>
+        {
+            ClientDoodler.UserThickness = (int)doodleInfo.UserThickness!;
+            ClientDoodler.UserColour = (Color)doodleInfo.UserColour!;
+            ClientDoodler.ContinueStrokeAt((Point)doodleInfo.Point!);
+        });
     }
 
     private void Client_UpEvent(DoodleInfo doodleInfo)
@@ -175,93 +204,178 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         Dispatcher.Invoke(ClientDoodler.PerformClear);
     }
 
-    private void Client_RoomStartedEvent(RoomInfo info)
-    {
-        if (info.IsStarted is true)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                IsStarted = true;
-                DoodlerGrid.Background = new SolidColorBrush(
-                    (Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
-            });
-        }
-    }
-
     private void Client_RoomSelectPlayerEvent(RoomInfo info)
     {
         Dispatcher.Invoke(() =>
         {
-            string currentTurnUsername = info.CurrentTurnPlayer!.Username;
+            _currentTurnPlayerGuid = info.CurrentTurnPlayer!.GUID;
+            _currentTurnUsername = info.CurrentTurnPlayer!.Username;
 
-            foreach (var player in _client.ConnectedPlayers)
-                player.PlayerData.IsTurn = player.PlayerData.Username == currentTurnUsername;
+            foreach (ClientPlayer player in _client.ConnectedPlayers)
+                player.PlayerData.IsTurn = player.PlayerData.GUID == _currentTurnPlayerGuid;
 
             IsPlayerTurn = _client.CurrentClientPlayer?.PlayerData?.IsTurn ?? false;
 
-            foreach (var card in PlayerList.Children.OfType<PlayerCardControl>())
-                card.UpdateIsDrawing(card.Username == currentTurnUsername);
+            foreach (PlayerCardControl card in PlayerList.Children.OfType<PlayerCardControl>())
+                card.UpdateIsDrawing(card.PlayerGuid == _currentTurnPlayerGuid);
+
+            ListBoxItem playerIsDrawing = new();
+            playerIsDrawing.Content = $"{_currentTurnUsername} is doodling now!";
+            playerIsDrawing.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9871B3"));
+
+            MessagesLst.Items.Add(playerIsDrawing);
+        });
+    }
+
+    private void Client_RoomGameStartedEvent(RoomInfo info)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (info.IsGameStarted is true)
+                IsGameStarted = true;
+
+            ShowWords = true;
+
+            if (!IsPlayerTurn)
+                NonPlayerInfoText = $"Player {_currentTurnUsername} is choosing a word...";
         });
     }
 
     private void Client_RoomWordsEvent(RoomInfo info)
     {
-        SelectWordPanel.Children.Clear();
-        foreach (string word in info.WordList!)
+        Dispatcher.Invoke(() =>
         {
-            ImageBrush brush = new()
+            SelectWordPanel.Children.Clear();
+            foreach (string word in info.WordList!)
             {
-                ImageSource = new BitmapImage(new Uri($"pack://application:,,,/Images/frame_long.png", UriKind.Absolute)),
-                Stretch = Stretch.Fill
-            };
-            Button btn = new()
-            {
-                Content = word,
-                Style = (Style?)FindResource("DoodleButtonStyle"),
-                Margin = new Thickness(20, 0, 20, 0),
-                Padding = new Thickness(30, 10, 30, 10),
-                FontSize = 20,
-                Background = brush
-            };
+                ImageBrush brush = new()
+                {
+                    ImageSource = new BitmapImage(new Uri($"pack://application:,,,/Images/frame_long.png", UriKind.Absolute)),
+                    Stretch = Stretch.Fill
+                };
+                Button btn = new()
+                {
+                    Content = word,
+                    Style = (Style?)FindResource("DoodleButtonStyle"),
+                    Margin = new Thickness(20, 0, 20, 0),
+                    Padding = new Thickness(30, 10, 30, 10),
+                    FontSize = 20,
+                    Background = brush
+                };
 
-            btn.Click += WordBtn_Click;
-            SelectWordPanel.Children.Add(btn);
-        }
+                btn.Click += WordBtn_Click;
+                SelectWordPanel.Children.Add(btn);
+            }
+        });
     }
 
     private async void WordBtn_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button button)
-            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendChosenWord(RoomActionType.ChosenWord, _roomCode, (string)button.Content));
+        {
+            string chosenWord = (string)button.Content;
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendChosenWord(RoomActionType.ChosenWord, _roomCode, chosenWord));
+            DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
+        }
+    }
+
+    private void SetWordHint(bool isPlayerTurn, string chosenWord)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            WordHint.Children.Clear();
+
+            if (isPlayerTurn)
+            {
+                WordHint.Children.Add(new TextBlock()
+                {
+                    Text = chosenWord,
+                    Tag = chosenWord,
+                    Margin = new Thickness(5, 5, 5, 0),
+                    FontSize = 20,
+                });
+            }
+            else
+            {
+                for (int i = 0; i < chosenWord.Length; i++)
+                {
+                    TextBlock block = new()
+                    {
+                        Text = chosenWord[i] == ' ' ? " " : "_",
+                        Tag = i,
+                        Margin = new Thickness(5, 5, 5, 0),
+                        FontSize = 20,
+                    };
+
+                    WordHint.Children.Add(block);
+                }
+            }
+        });
     }
 
     private void Client_RoomRoundStartEvent(RoomInfo info)
     {
-        WordHint.Children.Clear();
-
-        for (int i = 0; i < info.WordLength; i++)
+        Dispatcher.Invoke(() =>
         {
-            TextBlock block = new()
-            {
-                Text = "_",
-                Tag = i,
-                Margin = new Thickness(5, 0, 5, 0),
-                FontSize = 20,
-            };
+            IsRoundActive = (bool)info.IsRoundActive!;
+            ShowWords = false;
+            SetDoodlerBackground("White");
 
-            WordHint.Children.Add(block);
-        }
+            WordHint.Children.Clear();
+            string chosenWord = info.ChosenWord!;
+
+            SetWordHint(IsPlayerTurn, chosenWord);
+        });
     }
 
     private void Client_RoomRevealLetterEvent(RoomInfo info)
     {
-        TextBlock block = WordHint.Children.OfType<TextBlock>().FirstOrDefault(b => int.Parse((string)b.Tag) == info.RevealedLetterIndex)!;
-        block.Text = info.RevealedLetter.ToString();
+        Dispatcher.Invoke(() =>
+        {
+            if (!IsPlayerTurn)
+            {
+                TextBlock? block = WordHint.Children
+                    .OfType<TextBlock>()
+                    .FirstOrDefault(tb => tb.Tag is int idx && idx == info.RevealedLetterIndex);
+
+                // AI: fix null issues
+                block?.SetCurrentValue(TextBlock.TextProperty, info.RevealedLetter?.ToString());
+            }
+        });
+    }
+
+    private void Client_RoomRankUpdateEvent(RoomInfo info)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            Dictionary<Guid, PlayerRankPair> dict = info.PlayerRankings!;
+
+            var allCards = PlayerList.Children.OfType<PlayerCardControl>().ToList();
+            for (int i = 0; i < allCards.Count; i++)
+            {
+                PlayerRankPair pair = dict[allCards[i].PlayerGuid];
+                allCards[i].UpdateRankAndScore(pair.Rank, pair.Score);
+            }
+
+            PlayerCardControl cardToUpdateColour = allCards.FirstOrDefault(c => c.PlayerGuid == info.CorrectGuesser!.GUID)!;
+            cardToUpdateColour.UpdateColour((cardToUpdateColour.CardIndex % 2 == 0)
+                        ? "#54FF83"
+                        : "#44D16C");
+
+            ListBoxItem correctGuess = new();
+            correctGuess.Content = $"{info.CorrectGuesser!.Username} guessed the word!";
+            correctGuess.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#54FF83"));
+            correctGuess.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2E8C48"));
+
+            MessagesLst.Items.Add(correctGuess);
+        });
     }
 
     private void Client_RoomRoundEndEvent(RoomInfo info)
     {
-        throw new NotImplementedException();
+        IsRoundActive = !(bool)info.IsRoundActive!;
+
+
     }
 
     private void BuildPaletteButtons()
@@ -335,10 +449,8 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     {
         if (_client.ConnectedPlayers.Count > 1)
         {
-            IsStarted = true;
-            DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
-
-            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendIsStarted(RoomActionType.Start, _roomCode, IsStarted));
+            IsGameStarted = true;
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendIsStarted(RoomActionType.Start, _roomCode, IsGameStarted));
         }
         else
         {
@@ -348,43 +460,61 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
 
     private async void DisconnectBtn_Click(object sender, RoutedEventArgs e)
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Disconnect, _client.CurrentClientPlayer.PlayerData.Username);
+        await PacketHelper.SendPacketToServer(_client, PacketType.Disconnect, _client.CurrentClientPlayer.PlayerData);
     }
 
     private async void SendBtn_Click(object sender, RoutedEventArgs e)
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Message, new Message(_username, MessageTxt.Text));
+        if (IsRoundActive)
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendGuess(RoomActionType.Guess, _roomCode, MessageTxt.Text));
+        else
+            await PacketHelper.SendPacketToServer(_client, PacketType.Message, new Message(_username, MessageTxt.Text));
         MessageTxt.Clear();
     }
 
     private void Client_ClientMessageEvent(string message)
     {
-        Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
+        Dispatcher.Invoke(() =>
+        {
+            MessagesLst.Items.Add(message);
+        });
     }
 
     private void Client_DisconnectMessageEvent(string message, List<ClientPlayer> connectedPlayers)
     {
-        Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
-        Dispatcher.Invoke(() => SetPlayerCard(connectedPlayers));
+        Dispatcher.Invoke(() =>
+        {
+            MessagesLst.Items.Add(message);
+            SetPlayerCard(connectedPlayers);
+        });
     }
 
     private void Client_ConnectMessageEvent(string message, List<ClientPlayer> connectedPlayers)
     {
-        Dispatcher.Invoke(() => MessagesLst.Items.Add(message));
-        Dispatcher.Invoke(() => SetPlayerCard(connectedPlayers));
+        Dispatcher.Invoke(() =>
+        {
+            MessagesLst.Items.Add(message);
+            SetPlayerCard(connectedPlayers);
+        });
     }
 
     private void SetPlayerCard(List<ClientPlayer> connectedPlayers)
     {
         PlayerList.Children.Clear();
 
-        foreach (ClientPlayer player in connectedPlayers)
+        for (int i = 0; i < connectedPlayers.Count; i++)
         {
+            ClientPlayer player = connectedPlayers[i];
             PlayerCardControl card = new();
-            card.SetInfo(player.PlayerData.IsHost, 0, player.PlayerData.Username, player.PlayerData.Score, false);
+            card.SetInfo(i, player.PlayerData.GUID, player.PlayerData.IsHost, 0, player.PlayerData.Username, player.PlayerData.Score, false);
 
             PlayerList.Children.Add(card);
         }
+    }
+
+    private void SetDoodlerBackground(string colour)
+    {
+        DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette[$"{colour}"]));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

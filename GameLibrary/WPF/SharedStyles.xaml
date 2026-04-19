@@ -154,7 +154,7 @@
         <Style.Triggers>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding IsStarted}"
+                    <Condition Binding="{Binding IsRoundStarted}"
                                Value="True" />
                     <Condition Binding="{Binding IsPlayerTurn}"
                                Value="True" />
@@ -175,7 +175,7 @@
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding IsHost}"
                                Value="True" />
-                    <Condition Binding="{Binding IsStarted}"
+                    <Condition Binding="{Binding IsGameStarted}"
                                Value="False" />
                 </MultiDataTrigger.Conditions>
                 <Setter Property="Visibility"
@@ -192,11 +192,34 @@
         <Setter Property="Visibility"
                 Value="Visible" />
         <Style.Triggers>
-            <DataTrigger Binding="{Binding IsStarted}"
+            <DataTrigger Binding="{Binding IsGameStarted}"
                          Value="True">
                 <Setter Property="Visibility"
                         Value="Collapsed" />
             </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="NonPlayerInfoVisibleStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily"
+                Value="Comic Sans MS" />
+        <Setter Property="Visibility"
+                Value="Collapsed" />
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsPlayerTurn}"
+                               Value="False" />
+                    <Condition Binding="{Binding ShowWords}"
+                               Value="True" />
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.Setters>
+                    <Setter Property="UIElement.Visibility"
+                            Value="Visible" />
+                </MultiDataTrigger.Setters>
+            </MultiDataTrigger>
         </Style.Triggers>
     </Style>
 
@@ -207,7 +230,7 @@
         <Style.Triggers>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding IsStarted}"
+                    <Condition Binding="{Binding IsGameStarted}"
                                Value="True" />
                     <Condition Binding="{Binding IsPlayerTurn}"
                                Value="True" />
@@ -218,4 +241,21 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="WordPanelVisibleStyle"
+           TargetType="StackPanel">
+        <Setter Property="Visibility"
+                Value="Collapsed" />
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding ShowWords}"
+                               Value="True" />
+                    <Condition Binding="{Binding IsPlayerTurn}"
+                               Value="True" />
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Visibility"
+                        Value="Visible" />
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
 </ResourceDictionary>

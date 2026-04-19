@@ -6,23 +6,28 @@ namespace DoodlesServer.Models;
 
 public class Room(ServerPlayer host, string code, int playerCount, int doodleTime, int rounds, List<ServerPlayer> players)
 {
-    public delegate Task RoomLetterHandler(Room room, char letter);
+    public delegate Task RoomLetterHandler(Room room, char letter, int index);
     public event RoomLetterHandler? RevealLetterEvent;
 
     public delegate Task RoomRoundHandler(Room room);
     public event RoomRoundHandler? EndRoundEvent;
+
+    private const int MAX_POINTS = 300;
+    private int _timeRemaining;
 
     public ServerPlayer Host { get; set; } = host;
     public string Code { get; set; } = code;
     public int MaxPlayerCount { get; set; } = playerCount;
     public int DoodleTime { get; set; } = doodleTime;
     public int Rounds { get; set; } = rounds;
-    public bool IsStarted { get; set; }
+    public bool IsGameStarted { get; set; }
+    public bool IsRoundStarted { get; set; }
     public List<ServerPlayer> Players { get; set; } = players;
     public Queue<ServerPlayer> PlayerQueue { get; set; } = [];
     public ConcurrentQueue<DoodleInfo> DoodleQueue { get; set; } = [];
     public string CurrentWord { get; set; } = string.Empty;
     public List<string> AllUsedWords { get; set; } = [];
+    public List<PlayerData> AllGuessedPlayers { get; set; } = [];
 
     public List<string> GetThreeRandomWords()
     {
@@ -43,45 +48,73 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
         return words;
     }
 
-    private char GetRandomRevealedLetter()
+    public int GetGuessScore()
     {
-        Random rnd = new();
-        int index = rnd.Next(CurrentWord.Length);
-        return CurrentWord[index];
+        double ratio = _timeRemaining / DoodleTime;
+        return (int)Math.Round(MAX_POINTS * ratio);
+    }
+
+    public Dictionary<Guid, PlayerRankPair> GetRankOrder()
+    {
+        var sortedPlayersByScore = Players
+            .OrderByDescending(p => p.PlayerData.Score)
+            .ToList();
+
+        Dictionary<Guid, PlayerRankPair> rankingDictionary = [];
+        for (int i = 0; i < sortedPlayersByScore.Count; i++)
+            rankingDictionary.Add(sortedPlayersByScore[i].PlayerData.GUID, new PlayerRankPair(i + 1, sortedPlayersByScore[i].PlayerData.Score));
+
+        return rankingDictionary;
     }
 
     public async Task RunRoundAsync(CancellationToken cancellationToken = default)
     {
-        int remaining = DoodleTime;
-        int revealDuration = Math.Max(1, DoodleTime / 2);
-        int revealCount = CurrentWord.Length / 2;
+        AllGuessedPlayers.Clear();
 
-        while (remaining > 0)
+        IsRoundStarted = true;
+        _timeRemaining = DoodleTime;
+        int revealDuration = Math.Max(1, DoodleTime / 2);
+
+        Dictionary<int, char> letterIndexes = [];
+        for (int i = 0; i < CurrentWord.Length; i++)
         {
-            int wait = Math.Min(revealDuration, remaining);
+            if (CurrentWord[i] != ' ')
+                letterIndexes.Add(i, CurrentWord[i]);
+        }
+
+        int revealCount = Math.Min(3, letterIndexes.Count / 2);
+        Random rnd = new();
+
+        while (_timeRemaining > 0 && AllGuessedPlayers.Count < Players.Count - 1)
+        {
+            int wait = Math.Min(revealDuration, _timeRemaining);
             await Task.Delay(TimeSpan.FromSeconds(wait), cancellationToken);
-            remaining -= wait;
+            _timeRemaining -= wait;
             revealDuration = Math.Max(1, revealDuration / 2);
 
-            if (remaining > 0 && revealCount > 0)
+            if (_timeRemaining > 0 && revealCount > 0 && letterIndexes.Count > 0)
             {
-                char letter = GetRandomRevealedLetter();
-                await InvokeRevealLetterEventAsync(letter);
+                int key = letterIndexes.Keys.ElementAt(rnd.Next(letterIndexes.Count));
+                char letter = letterIndexes[key];
+                letterIndexes.Remove(key);
+
+                await InvokeRevealLetterEventAsync(letter, key);
                 revealCount--;
             }
         }
 
+        IsRoundStarted = false;
         await InvokeEndRoundEventAsync();
     }
 
     // AI: async event
-    private async Task InvokeRevealLetterEventAsync(char letter)
+    private async Task InvokeRevealLetterEventAsync(char letter, int index)
     {
         if (RevealLetterEvent is not { } handlers) return;
 
         foreach (RoomLetterHandler handler in handlers.GetInvocationList())
         {
-            await handler(this, letter);
+            await handler(this, letter, index);
         }
     }
 

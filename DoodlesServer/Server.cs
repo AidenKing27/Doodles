@@ -93,8 +93,25 @@ public class Server
     {
         switch (packet.Type)
         {
+
+            case PacketType.ServerConnect:
+                await HandleServerConnect(packet, player);
+                break;
+
+            case PacketType.Disconnect:
+                await HandleDisconnect(player);
+                break;
+
             case PacketType.Message:
                 await HandleMessage(packet, player);
+                break;
+
+            case PacketType.PlayerData:
+                await HandlePlayerData(packet, player);
+                break;
+
+            case PacketType.RoomCodes:
+                await HandleRoomCodes(player);
                 break;
 
             case PacketType.CreateRoom:
@@ -105,28 +122,12 @@ public class Server
                 await HandleJoinRoom(packet, player);
                 break;
 
-            case PacketType.PlayerData:
-                await HandlePlayerData(packet, player);
-                break;
-
-            case PacketType.ServerConnect:
-                await HandleConnect(packet, player);
-                break;
-
-            case PacketType.Disconnect:
-                await HandleDisconnect(player);
-                break;
-
-            case PacketType.RoomCodes:
-                await HandleRoomCodes(player);
+            case PacketType.RoomInfo:
+                await HandleRoomInfo(packet, player);
                 break;
 
             case PacketType.Doodle:
                 await HandleDoodle(packet, player);
-                break;
-
-            case PacketType.RoomInfo:
-                await HandleRoomInfo(packet, player);
                 break;
 
             default:
@@ -134,7 +135,7 @@ public class Server
         }
     }
 
-    private async Task HandleConnect(Packet packet, ServerPlayer player)
+    private async Task HandleServerConnect(Packet packet, ServerPlayer player)
     {
         _players.Add(player);
 
@@ -143,16 +144,16 @@ public class Server
 
     private async Task HandleDisconnect(ServerPlayer player)
     {
-        if (player.PlayerData.Username == "") return;
+        if (player.PlayerData.GUID == Guid.Empty) return;
 
         string roomCode = player.PlayerData.RoomCode;
         if (_rooms.TryGetValue(roomCode, out Room? room))
         {
             foreach (ServerPlayer p in room.Players)
                 await BroadcastMessage(
-                    p.Client, 
-                    PacketType.Disconnect, 
-                    $"{player.PlayerData.Username}");
+                    p.Client,
+                    PacketType.Disconnect,
+                    player.PlayerData);
         }
 
         DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} disconnected from the server ({player.Client.Client.RemoteEndPoint})");
@@ -175,8 +176,8 @@ public class Server
 
         foreach (ServerPlayer p in _rooms[player.PlayerData.RoomCode].Players)
             await BroadcastMessage(
-                p.Client, 
-                PacketType.Message, 
+                p.Client,
+                PacketType.Message,
                 message);
 
         ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {message.Sender}: {message.Content}");
@@ -190,24 +191,33 @@ public class Server
     private async Task HandleRoomCodes(ServerPlayer player)
     {
         await BroadcastMessage(
-            player.Client, 
-            PacketType.RoomCodes, 
+            player.Client,
+            PacketType.RoomCodes,
             new List<string>(_rooms.Keys));
     }
 
     private async Task HandleCreateRoom(Packet packet, ServerPlayer player)
     {
-        RoomDto roomDto = JsonSerializer.Deserialize<RoomDto>(packet.Content!)!;
-        Room newRoom = new(player, roomDto.Code, roomDto.MaxPlayerCount, roomDto.DoodleTime, roomDto.Rounds, [player]);
-        newRoom.RevealLetterEvent += Room_RevealLetterEvent;
-        newRoom.EndRoundEvent += Room_EndRoundEvent;
-        _rooms.Add(roomDto.Code, newRoom);
-        await BroadcastMessage(
-            player.Client, 
-            PacketType.PlayerData, 
-            player.PlayerData);
+        try
+        {
+            CreateRoomDto roomDto = JsonSerializer.Deserialize<CreateRoomDto>(packet.Content!)!;
+            Room newRoom = new(player, roomDto.Code, roomDto.MaxPlayerCount, roomDto.DoodleTime, roomDto.Rounds, [player]);
+            newRoom.RevealLetterEvent += Room_RevealLetterEvent;
+            newRoom.EndRoundEvent += Room_EndRoundEvent;
+            _rooms.Add(roomDto.Code, newRoom);
+            await BroadcastMessage(
+                player.Client,
+                PacketType.PlayerData,
+                player.PlayerData);
 
-        ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} has created and joined Room: {roomDto.Code} ({player.Client.Client.RemoteEndPoint})");
+            ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} has created and joined Room: {roomDto.Code} ({player.Client.Client.RemoteEndPoint})");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            throw;
+        }
+
     }
 
     private async Task HandleJoinRoom(Packet packet, ServerPlayer player)
@@ -223,14 +233,14 @@ public class Server
             {
                 //tell every player of the new client
                 await BroadcastMessage(
-                    p.Client, 
-                    PacketType.PlayerData, 
+                    p.Client,
+                    PacketType.PlayerData,
                     player.PlayerData);
 
                 //tell the new client of every player
                 await BroadcastMessage(
-                    player.Client, 
-                    PacketType.PlayerData, 
+                    player.Client,
+                    PacketType.PlayerData,
                     p.PlayerData);
             }
 
@@ -246,25 +256,26 @@ public class Server
             switch (info.RoomActionType)
             {
                 case RoomActionType.Start:
-                    room.IsStarted = true;
+                    room.IsGameStarted = true;
+                    room.PlayerQueue.Enqueue(room.Host);
                     ServerPlayer selectedPlayer = room.PlayerQueue.Dequeue();
                     room.PlayerQueue.Enqueue(selectedPlayer);
                     foreach (ServerPlayer p in room.Players)
                     {
                         await BroadcastMessage(
-                            p.Client, 
-                            PacketType.RoomInfo, 
-                            packet);
+                            p.Client,
+                            PacketType.RoomInfo,
+                            RoomInfo.SendCurrentTurnPlayer(RoomActionType.SelectPlayer, room.Code, selectedPlayer.PlayerData));
 
                         await BroadcastMessage(
-                            p.Client, 
-                            PacketType.RoomInfo, 
-                            RoomInfo.SendCurrentTurnPlayer(RoomActionType.SelectPlayer, room.Code, selectedPlayer.PlayerData));
+                            p.Client,
+                            PacketType.RoomInfo,
+                            packet);
                     }
 
                     await BroadcastMessage(
-                        selectedPlayer.Client, 
-                        PacketType.RoomInfo, 
+                        selectedPlayer.Client,
+                        PacketType.RoomInfo,
                         RoomInfo.SendWordList(RoomActionType.WordList, room.Code, room.GetThreeRandomWords()));
 
                     break;
@@ -275,12 +286,31 @@ public class Server
                     foreach (ServerPlayer p in room.Players)
                     {
                         await BroadcastMessage(
-                            p.Client, 
-                            PacketType.RoomInfo, 
-                            RoomInfo.SendWordLength(RoomActionType.RoundStart, room.Code, room.CurrentWord.Length));
+                            p.Client,
+                            PacketType.RoomInfo,
+                            RoomInfo.SendRoundStart(RoomActionType.RoundStart, room.Code, room.CurrentWord, true));
                     }
 
                     _ = room.RunRoundAsync();
+                    break;
+
+                case RoomActionType.Guess:
+                    if (string.Equals(info.PlayerGuess, room.CurrentWord, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!room.AllGuessedPlayers.Any(p => p.GUID == player.PlayerData.GUID))
+                        {
+                            player.PlayerData.Score = room.GetGuessScore();
+                            room.AllGuessedPlayers.Add(player.PlayerData);
+
+                            foreach (ServerPlayer p in room.Players)
+                            {
+                                await BroadcastMessage(
+                                p.Client,
+                                PacketType.RoomInfo,
+                                RoomInfo.SendScoreUpdate(RoomActionType.RoomUpdate, room.Code, player.PlayerData, room.GetRankOrder()));
+                            }
+                        }
+                    }
                     break;
 
                 default:
@@ -290,14 +320,14 @@ public class Server
     }
 
     //callbacks from room.RunRoundAsync();
-    private async Task Room_RevealLetterEvent(Room room, char letter)
+    private async Task Room_RevealLetterEvent(Room room, char letter, int index)
     {
         foreach (ServerPlayer p in room.Players)
         {
             await BroadcastMessage(
-                p.Client, 
-                PacketType.RoomInfo, 
-                RoomInfo.SendRandomLetterReveal(RoomActionType.RevealedLetter, room.Code, letter, room.CurrentWord.IndexOf(letter)));
+                p.Client,
+                PacketType.RoomInfo,
+                RoomInfo.SendRandomLetterReveal(RoomActionType.RevealedLetter, room.Code, letter, index));
         }
     }
 
@@ -307,9 +337,9 @@ public class Server
         foreach (ServerPlayer p in room.Players)
         {
             await BroadcastMessage(
-                p.Client, 
-                PacketType.RoomInfo, 
-                RoomInfo.SendRoundOver(RoomActionType.RoundEnd, room.Code, true));
+                p.Client,
+                PacketType.RoomInfo,
+                RoomInfo.SendRoundOver(RoomActionType.RoundEnd, room.Code, false));
         }
     }
 
@@ -320,7 +350,7 @@ public class Server
             room.DoodleQueue.Enqueue(JsonSerializer.Deserialize<DoodleInfo>(packet.Content!)!);
             if (room.DoodleQueue.TryDequeue(out DoodleInfo? doodleInfo))
                 foreach (ServerPlayer p in room.Players)
-                    if (p.PlayerData.Username != player.PlayerData.Username)
+                    if (p.PlayerData.GUID != player.PlayerData.GUID)
                         await BroadcastMessage(p.Client, PacketType.Doodle, doodleInfo!);
         }
     }

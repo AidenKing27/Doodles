@@ -6,14 +6,17 @@ public class RoomInfo()
 {
     public RoomActionType RoomActionType { get; set; }
     public string RoomCode { get; set; } = string.Empty;
-    public bool? IsStarted { get; set; }
+    public bool? IsGameStarted { get; set; }
+    public bool? IsRoundActive { get; set; }
+    public List<string>? WordList { get; set; }
     public string? ChosenWord { get; set; } = string.Empty;
-    public int? WordLength { get; set; }
     public char? RevealedLetter { get; set; }
     public int? RevealedLetterIndex { get; set; }
-    public List<string>? WordList { get; set; }
-    public bool? RoundOver { get; set; }
     public PlayerData? CurrentTurnPlayer { get; set; }
+    public PlayerData? UpdatePlayer { get; set; }
+    public PlayerData? CorrectGuesser { get; set; }
+    public string? PlayerGuess { get; set; }
+    public Dictionary<Guid, PlayerRankPair>? PlayerRankings { get; set; }
 
     public static RoomInfo SendIsStarted(RoomActionType type, string roomCode, bool isStarted)
     {
@@ -21,7 +24,7 @@ public class RoomInfo()
         {
             RoomActionType = type,
             RoomCode = roomCode,
-            IsStarted = isStarted
+            IsGameStarted = isStarted
         };
     }
 
@@ -55,13 +58,14 @@ public class RoomInfo()
         };
     }
 
-    public static RoomInfo SendWordLength(RoomActionType type, string roomCode, int wordLength)
+    public static RoomInfo SendRoundStart(RoomActionType type, string roomCode, string chosenWord, bool isRoundStarted)
     {
         return new()
         {
             RoomActionType = type,
             RoomCode = roomCode,
-            WordLength = wordLength
+            ChosenWord = chosenWord,
+            IsRoundActive = isRoundStarted
         };
     }
 
@@ -76,13 +80,34 @@ public class RoomInfo()
         };
     }
 
-    public static RoomInfo SendRoundOver(RoomActionType type, string roomCode, bool roundOver)
+    public static RoomInfo SendRoundOver(RoomActionType type, string roomCode, bool isRoundActive)
     {
         return new()
         {
             RoomActionType = type,
             RoomCode = roomCode,
-            RoundOver = roundOver
+            IsRoundActive = isRoundActive
+        };
+    }
+
+    public static RoomInfo SendGuess(RoomActionType type, string roomCode, string guess)
+    {
+        return new()
+        {
+            RoomActionType = type,
+            RoomCode = roomCode,
+            PlayerGuess = guess
+        };
+    }
+
+    public static RoomInfo SendScoreUpdate(RoomActionType type, string roomCode, PlayerData correctGuesser, Dictionary<Guid, PlayerRankPair> playerRankings)
+    {
+        return new()
+        {
+            RoomActionType = type,
+            RoomCode = roomCode,
+            CorrectGuesser = correctGuesser,
+            PlayerRankings = playerRankings
         };
     }
 }

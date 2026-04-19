@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace DoodlesClient;
 
@@ -10,6 +11,9 @@ namespace DoodlesClient;
 /// </summary>
 public partial class PlayerCardControl : UserControl, INotifyPropertyChanged
 {
+    public int CardIndex { get; set; }
+    public Guid PlayerGuid { get; set; }
+
     private string _rank = "#0";
     private string _username = "Username";
     private string _score = "Points: 0";
@@ -52,8 +56,10 @@ public partial class PlayerCardControl : UserControl, INotifyPropertyChanged
         DataContext = this;
     }
 
-    public void SetInfo(bool isHost, int rank, string username, int score, bool isDrawing)
+    public void SetInfo(int cardIndex, Guid playerGuid, bool isHost, int rank, string username, int score, bool isDrawing)
     {
+        CardIndex = cardIndex;
+        PlayerGuid = playerGuid;
         IsHost = isHost;
         Rank = $"#{rank}";
         Username = username;
@@ -66,14 +72,15 @@ public partial class PlayerCardControl : UserControl, INotifyPropertyChanged
         IsDrawing = isDrawing;
     }
 
-    public void UpdateRank(int rank)
+    public void UpdateRankAndScore(int rank, int score)
     {
         Rank = $"#{rank}";
+        Score = $"Points: {score}";
     }
 
-    public void UpdateScore(int score)
+    public void UpdateColour(string hex)
     {
-        Score = $"Points: {score}";
+        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
