@@ -4,6 +4,7 @@ public enum PacketType
 {
     Message,
     CreateRoom,
+    JoinRoom,
     PlayerData,
     ServerConnect,
     Disconnect,

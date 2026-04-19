@@ -1,5 +1,4 @@
-﻿using DoodlesServer.Helpers;
-using DoodlesServer.Models;
+﻿using DoodlesServer.Models;
 using GameLibrary.Core;
 using GameLibrary.Enums;
 using GameLibrary.Models;
@@ -102,6 +101,10 @@ public class Server
                 await HandleCreateRoom(packet, player);
                 break;
 
+            case PacketType.JoinRoom:
+                await HandleJoinRoom(packet, player);
+                break;
+
             case PacketType.PlayerData:
                 await HandlePlayerData(packet, player);
                 break;
@@ -131,48 +134,6 @@ public class Server
         }
     }
 
-    private async Task HandleMessage(Packet packet, ServerPlayer player)
-    {
-        Message message = JsonSerializer.Deserialize<Message>(packet.Content!)!;
-
-        foreach (ServerPlayer p in _rooms[player.PlayerData.RoomCode].Players)
-            await BroadcastMessage(p.Client, PacketType.Message, message);
-
-        ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {message.Sender}: {message.Content}");
-    }
-
-    private async Task HandleCreateRoom(Packet packet, ServerPlayer player)
-    {
-        RoomDto roomDto = JsonSerializer.Deserialize<RoomDto>(packet.Content!)!;
-        Room newRoom = new(player, roomDto.Code, roomDto.PlayerCount, roomDto.DoodleTime, roomDto.Rounds, [player]);
-        newRoom.PlayerQueue.Enqueue(player);
-        _rooms.Add(roomDto.Code, newRoom);
-        await BroadcastMessage(player.Client, PacketType.PlayerData, player.PlayerData);
-    }
-
-    private async Task HandlePlayerData(Packet packet, ServerPlayer player)
-    {
-        player.PlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
-
-        string roomCode = player.PlayerData.RoomCode;
-        if (_rooms.TryGetValue(roomCode, out Room? room))
-        {
-            room.Players.Add(player);
-            room.PlayerQueue.Enqueue(player);
-            foreach (ServerPlayer p in room.Players)
-            {
-                await BroadcastMessage(p.Client, PacketType.PlayerData, player.PlayerData); //tell every player of the new client
-                await BroadcastMessage(player.Client, PacketType.PlayerData, p.PlayerData); //tell the new client of every player
-            }
-
-            ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
-        }
-        else
-        {
-            ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} has created and joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
-        }
-    }
-
     private async Task HandleConnect(Packet packet, ServerPlayer player)
     {
         _players.Add(player);
@@ -188,7 +149,10 @@ public class Server
         if (_rooms.TryGetValue(roomCode, out Room? room))
         {
             foreach (ServerPlayer p in room.Players)
-                await BroadcastMessage(p.Client, PacketType.Disconnect, $"{player.PlayerData.Username}");
+                await BroadcastMessage(
+                    p.Client, 
+                    PacketType.Disconnect, 
+                    $"{player.PlayerData.Username}");
         }
 
         DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} disconnected from the server ({player.Client.Client.RemoteEndPoint})");
@@ -205,20 +169,72 @@ public class Server
     //    DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} lost connection to the server ({player.Client.Client.RemoteEndPoint})");
     //}
 
-    private async Task HandleRoomCodes(ServerPlayer player)
+    private async Task HandleMessage(Packet packet, ServerPlayer player)
     {
-        await BroadcastMessage(player.Client, PacketType.RoomCodes, new List<string>(_rooms.Keys));
+        Message message = JsonSerializer.Deserialize<Message>(packet.Content!)!;
+
+        foreach (ServerPlayer p in _rooms[player.PlayerData.RoomCode].Players)
+            await BroadcastMessage(
+                p.Client, 
+                PacketType.Message, 
+                message);
+
+        ServerMessageEvent?.Invoke($"[{player.PlayerData.RoomCode}] {message.Sender}: {message.Content}");
     }
 
-    private async Task HandleDoodle(Packet packet, ServerPlayer player)
+    private async Task HandlePlayerData(Packet packet, ServerPlayer player)
     {
-        if (_rooms.TryGetValue(player.PlayerData.RoomCode, out Room? room))
+        player.PlayerData = JsonSerializer.Deserialize<PlayerData>(packet.Content!)!;
+    }
+
+    private async Task HandleRoomCodes(ServerPlayer player)
+    {
+        await BroadcastMessage(
+            player.Client, 
+            PacketType.RoomCodes, 
+            new List<string>(_rooms.Keys));
+    }
+
+    private async Task HandleCreateRoom(Packet packet, ServerPlayer player)
+    {
+        RoomDto roomDto = JsonSerializer.Deserialize<RoomDto>(packet.Content!)!;
+        Room newRoom = new(player, roomDto.Code, roomDto.MaxPlayerCount, roomDto.DoodleTime, roomDto.Rounds, [player]);
+        newRoom.RevealLetterEvent += Room_RevealLetterEvent;
+        newRoom.EndRoundEvent += Room_EndRoundEvent;
+        _rooms.Add(roomDto.Code, newRoom);
+        await BroadcastMessage(
+            player.Client, 
+            PacketType.PlayerData, 
+            player.PlayerData);
+
+        ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} has created and joined Room: {roomDto.Code} ({player.Client.Client.RemoteEndPoint})");
+    }
+
+    private async Task HandleJoinRoom(Packet packet, ServerPlayer player)
+    {
+        string roomCode = player.PlayerData.RoomCode;
+        if (_rooms.TryGetValue(roomCode, out Room? room))
         {
-            room.DoodleQueue.Enqueue(JsonSerializer.Deserialize<DoodleInfo>(packet.Content!)!);
-            if (room.DoodleQueue.TryDequeue(out DoodleInfo? doodleInfo))
-                foreach (ServerPlayer p in room.Players)
-                    if (p.PlayerData.Username != player.PlayerData.Username)
-                        await BroadcastMessage(p.Client, PacketType.Doodle, doodleInfo!);
+            if (room.Players.Count >= room.MaxPlayerCount) return;
+
+            room.Players.Add(player);
+            room.PlayerQueue.Enqueue(player);
+            foreach (ServerPlayer p in room.Players)
+            {
+                //tell every player of the new client
+                await BroadcastMessage(
+                    p.Client, 
+                    PacketType.PlayerData, 
+                    player.PlayerData);
+
+                //tell the new client of every player
+                await BroadcastMessage(
+                    player.Client, 
+                    PacketType.PlayerData, 
+                    p.PlayerData);
+            }
+
+            ConnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} joined Room: {roomCode} ({player.Client.Client.RemoteEndPoint})");
         }
     }
 
@@ -230,19 +246,82 @@ public class Server
             switch (info.RoomActionType)
             {
                 case RoomActionType.Start:
-                    Random rnd = new();
-                    ServerPlayer selectedPlayer = room.Players[rnd.Next(room.Players.Count)];
+                    room.IsStarted = true;
+                    ServerPlayer selectedPlayer = room.PlayerQueue.Dequeue();
+                    room.PlayerQueue.Enqueue(selectedPlayer);
                     foreach (ServerPlayer p in room.Players)
                     {
-                        await BroadcastMessage(p.Client, PacketType.RoomInfo, packet);
-                        await BroadcastMessage(p.Client, PacketType.RoomInfo, RoomInfo.CreateRoomInfoCurrentTurnPlayer(RoomActionType.SelectPlayer, room.Code, selectedPlayer.PlayerData));
-                        await BroadcastMessage(player.Client, PacketType.RoomInfo, RoomInfo.CreateRoomInfoWordList(RoomActionType.Words, room.Code, WordHelper.GetThreeRandomWords(room.AllUsedWords)));
+                        await BroadcastMessage(
+                            p.Client, 
+                            PacketType.RoomInfo, 
+                            packet);
+
+                        await BroadcastMessage(
+                            p.Client, 
+                            PacketType.RoomInfo, 
+                            RoomInfo.SendCurrentTurnPlayer(RoomActionType.SelectPlayer, room.Code, selectedPlayer.PlayerData));
                     }
+
+                    await BroadcastMessage(
+                        selectedPlayer.Client, 
+                        PacketType.RoomInfo, 
+                        RoomInfo.SendWordList(RoomActionType.WordList, room.Code, room.GetThreeRandomWords()));
+
+                    break;
+
+                case RoomActionType.ChosenWord:
+                    room.CurrentWord = info.ChosenWord!;
+
+                    foreach (ServerPlayer p in room.Players)
+                    {
+                        await BroadcastMessage(
+                            p.Client, 
+                            PacketType.RoomInfo, 
+                            RoomInfo.SendWordLength(RoomActionType.RoundStart, room.Code, room.CurrentWord.Length));
+                    }
+
+                    _ = room.RunRoundAsync();
                     break;
 
                 default:
                     break;
             }
+        }
+    }
+
+    //callbacks from room.RunRoundAsync();
+    private async Task Room_RevealLetterEvent(Room room, char letter)
+    {
+        foreach (ServerPlayer p in room.Players)
+        {
+            await BroadcastMessage(
+                p.Client, 
+                PacketType.RoomInfo, 
+                RoomInfo.SendRandomLetterReveal(RoomActionType.RevealedLetter, room.Code, letter, room.CurrentWord.IndexOf(letter)));
+        }
+    }
+
+    //callbacks from room.RunRoundAsync();
+    private async Task Room_EndRoundEvent(Room room)
+    {
+        foreach (ServerPlayer p in room.Players)
+        {
+            await BroadcastMessage(
+                p.Client, 
+                PacketType.RoomInfo, 
+                RoomInfo.SendRoundOver(RoomActionType.RoundEnd, room.Code, true));
+        }
+    }
+
+    private async Task HandleDoodle(Packet packet, ServerPlayer player)
+    {
+        if (_rooms.TryGetValue(player.PlayerData.RoomCode, out Room? room))
+        {
+            room.DoodleQueue.Enqueue(JsonSerializer.Deserialize<DoodleInfo>(packet.Content!)!);
+            if (room.DoodleQueue.TryDequeue(out DoodleInfo? doodleInfo))
+                foreach (ServerPlayer p in room.Players)
+                    if (p.PlayerData.Username != player.PlayerData.Username)
+                        await BroadcastMessage(p.Client, PacketType.Doodle, doodleInfo!);
         }
     }
 

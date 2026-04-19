@@ -12,7 +12,7 @@ public class DoodleInfo
     public Color? UserColour { get; set; }
     public Point? Point { get; set; }
 
-    public static DoodleInfo CreateDoodleInfo(DoodleType type, int? thickness, Color? colour, Point? p = null, bool? isErasing = null)
+    public static DoodleInfo SendDoodleInfo(DoodleType type, int? thickness, Color? colour, Point? p = null, bool? isErasing = null)
     {
         return new()
         {
@@ -23,7 +23,7 @@ public class DoodleInfo
         };
     }
 
-    public static DoodleInfo CreateDoodleInfoErasing(DoodleType type, bool isErasing)
+    public static DoodleInfo SendIsErasing(DoodleType type, bool isErasing)
     {
         return new()
         {
@@ -32,7 +32,7 @@ public class DoodleInfo
         };
     }
 
-    public static DoodleInfo CreateDoodleInfoThickness(DoodleType type, int thickness)
+    public static DoodleInfo SendThickness(DoodleType type, int thickness)
     {
         return new()
         {

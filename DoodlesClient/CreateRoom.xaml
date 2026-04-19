@@ -60,8 +60,8 @@
                 <ComboBox Grid.Row="0"
                           x:Name="PlayerCountCmb"
                           Margin="5"
-                          SelectedItem="{Binding PlayerCount}"
-                          ItemsSource="{Binding PlayerCounts}">
+                          SelectedItem="{Binding MaxPlayerCount}"
+                          ItemsSource="{Binding MaxPlayerCounts}">
 
                 </ComboBox>
 

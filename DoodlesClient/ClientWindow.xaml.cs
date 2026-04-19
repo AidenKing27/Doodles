@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace DoodlesClient;
 
@@ -19,7 +20,6 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     private readonly Client _client;
     private readonly string _username;
     private readonly string _roomCode;
-    private List<string> _tempWords = [];
 
     public bool IsPlayerTurn
     {
@@ -93,35 +93,57 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         _client.RoomStartedEvent += Client_RoomStartedEvent;
         _client.RoomSelectPlayerEvent += Client_RoomSelectPlayerEvent;
         _client.RoomWordsEvent += Client_RoomWordsEvent;
+        _client.RoomRoundStartEvent += Client_RoomRoundStartEvent;
+        _client.RoomRevealLetterEvent += Client_RoomRevealLetterEvent;
+        _client.RoomRoundEndEvent += Client_RoomRoundEndEvent;
 
         // Joined Room
         if (!IsHost)
-            await PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, new PlayerData(_username, _roomCode, IsHost));
+        {
+            PlayerData data = new(_username, _roomCode, IsHost);
+            await PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
+            await PacketHelper.SendPacketToServer(_client, PacketType.JoinRoom, data);
+        }
     }
 
     private async void ClientDoodler_DoodleMouseDownEvent(Point p)
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Down, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
+        await PacketHelper.SendPacketToServer(
+            _client, PacketType.Doodle, 
+            DoodleInfo.SendDoodleInfo(DoodleType.Down, 
+            ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
     }
 
     private async void ClientDoodler_DoodleMouseMoveEvent(Point p)
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Move, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
+        await PacketHelper.SendPacketToServer(
+            _client, 
+            PacketType.Doodle, 
+            DoodleInfo.SendDoodleInfo(DoodleType.Move, ClientDoodler.UserThickness, ClientDoodler.UserColour, p));
     }
 
     private async void ClientDoodler_DoodleMouseUpEvent()
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Up, ClientDoodler.UserThickness, ClientDoodler.UserColour));
+        await PacketHelper.SendPacketToServer(
+            _client, 
+            PacketType.Doodle, 
+            DoodleInfo.SendDoodleInfo(DoodleType.Up, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private async void ClientDoodler_DoodleUndoEvent()
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Undo, ClientDoodler.UserThickness, ClientDoodler.UserColour));
+        await PacketHelper.SendPacketToServer(
+            _client, 
+            PacketType.Doodle, 
+            DoodleInfo.SendDoodleInfo(DoodleType.Undo, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private async void ClientDoodler_DoodleClearEvent()
     {
-        await PacketHelper.SendPacketToServer(_client, PacketType.Doodle, DoodleInfo.CreateDoodleInfo(DoodleType.Clear, ClientDoodler.UserThickness, ClientDoodler.UserColour));
+        await PacketHelper.SendPacketToServer(
+            _client, 
+            PacketType.Doodle, 
+            DoodleInfo.SendDoodleInfo(DoodleType.Clear, ClientDoodler.UserThickness, ClientDoodler.UserColour));
     }
 
     private void Client_DownEvent(DoodleInfo doodleInfo)
@@ -170,7 +192,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     {
         Dispatcher.Invoke(() =>
         {
-            string currentTurnUsername = info.CurrentTurnPlayer.Username;
+            string currentTurnUsername = info.CurrentTurnPlayer!.Username;
 
             foreach (var player in _client.ConnectedPlayers)
                 player.PlayerData.IsTurn = player.PlayerData.Username == currentTurnUsername;
@@ -184,7 +206,62 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
 
     private void Client_RoomWordsEvent(RoomInfo info)
     {
-        _tempWords = info.Words!;
+        SelectWordPanel.Children.Clear();
+        foreach (string word in info.WordList!)
+        {
+            ImageBrush brush = new()
+            {
+                ImageSource = new BitmapImage(new Uri($"pack://application:,,,/Images/frame_long.png", UriKind.Absolute)),
+                Stretch = Stretch.Fill
+            };
+            Button btn = new()
+            {
+                Content = word,
+                Style = (Style?)FindResource("DoodleButtonStyle"),
+                Margin = new Thickness(20, 0, 20, 0),
+                Padding = new Thickness(30, 10, 30, 10),
+                FontSize = 20,
+                Background = brush
+            };
+
+            btn.Click += WordBtn_Click;
+            SelectWordPanel.Children.Add(btn);
+        }
+    }
+
+    private async void WordBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button)
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendChosenWord(RoomActionType.ChosenWord, _roomCode, (string)button.Content));
+    }
+
+    private void Client_RoomRoundStartEvent(RoomInfo info)
+    {
+        WordHint.Children.Clear();
+
+        for (int i = 0; i < info.WordLength; i++)
+        {
+            TextBlock block = new()
+            {
+                Text = "_",
+                Tag = i,
+                Margin = new Thickness(5, 0, 5, 0),
+                FontSize = 20,
+            };
+
+            WordHint.Children.Add(block);
+        }
+    }
+
+    private void Client_RoomRevealLetterEvent(RoomInfo info)
+    {
+        TextBlock block = WordHint.Children.OfType<TextBlock>().FirstOrDefault(b => int.Parse((string)b.Tag) == info.RevealedLetterIndex)!;
+        block.Text = info.RevealedLetter.ToString();
+    }
+
+    private void Client_RoomRoundEndEvent(RoomInfo info)
+    {
+        throw new NotImplementedException();
     }
 
     private void BuildPaletteButtons()
@@ -261,7 +338,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
             IsStarted = true;
             DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
 
-            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.CreateRoomInfoIsStarted(RoomActionType.Start, _roomCode, IsStarted));
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendIsStarted(RoomActionType.Start, _roomCode, IsStarted));
         }
         else
         {

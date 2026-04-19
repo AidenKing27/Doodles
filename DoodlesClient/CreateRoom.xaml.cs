@@ -13,8 +13,8 @@ public partial class CreateRoom : Window
     private Client _client;
     private string _username;
 
-    public List<int> PlayerCounts { get; set; } = [2, 3, 4, 5, 6, 7, 8, 9, 10];
-    public int PlayerCount { get; set; } = 8;
+    public List<int> MaxPlayerCounts { get; set; } = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+    public int MaxPlayerCount { get; set; } = 8;
     public List<int> DoodleTimes { get; set; } = [15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120];
     public int DoodleTime { get; set; } = 80;
     public List<int> Rounds { get; set; } = [1, 2, 3, 4, 5, 6];
@@ -37,7 +37,7 @@ public partial class CreateRoom : Window
         clientWindow.Show();
 
         await PacketHelper.SendPacketToServer(_client, PacketType.PlayerData, data);
-        await PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new RoomDto(roomCode, PlayerCount, DoodleTime, NumRounds));
+        await PacketHelper.SendPacketToServer(_client, PacketType.CreateRoom, new RoomDto(roomCode, MaxPlayerCount, DoodleTime, NumRounds));
 
         DialogResult = true;
         Hide();

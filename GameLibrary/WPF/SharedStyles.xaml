@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:gl="clr-namespace:GameLibrary.Core">
 
     <!--AI Help for Style-->
     <Style x:Key="DoodleButtonStyle"
@@ -143,6 +144,77 @@
                 <Setter Property="Background"
                         Value="#f1707a" />
             </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="PlayerTurnVisibleStyle"
+           TargetType="FrameworkElement">
+        <Setter Property="Visibility"
+                Value="Collapsed" />
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsStarted}"
+                               Value="True" />
+                    <Condition Binding="{Binding IsPlayerTurn}"
+                               Value="True" />
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Visibility"
+                        Value="Visible" />
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="HostStartVisibleButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource DoodleButtonStyle}">
+        <Setter Property="Visibility"
+                Value="Collapsed" />
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsHost}"
+                               Value="True" />
+                    <Condition Binding="{Binding IsStarted}"
+                               Value="False" />
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Visibility"
+                        Value="Visible" />
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="VisibleUntilStartedStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily"
+                Value="Comic Sans MS" />
+        <Setter Property="Visibility"
+                Value="Visible" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsStarted}"
+                         Value="True">
+                <Setter Property="Visibility"
+                        Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="PlayerTurnDoodlerEnabledStyle"
+           TargetType="{x:Type gl:Doodler}">
+        <Setter Property="IsEnabled"
+                Value="False" />
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsStarted}"
+                               Value="True" />
+                    <Condition Binding="{Binding IsPlayerTurn}"
+                               Value="True" />
+                </MultiDataTrigger.Conditions>
+                <Setter Property="IsEnabled"
+                        Value="True" />
+            </MultiDataTrigger>
         </Style.Triggers>
     </Style>
 

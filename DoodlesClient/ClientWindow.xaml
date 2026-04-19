@@ -16,6 +16,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
+
     <!--Container Grid-->
     <Grid>
         <Grid.ColumnDefinitions>
@@ -65,7 +66,25 @@
             <StackPanel x:Name="WordHint"
                         Grid.Row="0"
                         HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         Orientation="Horizontal">
+
+                <TextBlock Text="_"
+                           Margin="5 0 5 0"
+                           FontSize="20"></TextBlock>
+                <TextBlock Text="_"
+                           Margin="5 0 5 0"
+                           FontSize="20"></TextBlock>
+                <TextBlock Text="_"
+                           Margin="5 0 5 0"
+                           FontSize="20"></TextBlock>
+                <TextBlock Text="_"
+                           Margin="5 0 5 0"
+                           FontSize="20"></TextBlock>
+                <TextBlock Text="_"
+                           Margin="5 0 5 0"
+                           FontSize="20"></TextBlock>
+
             </StackPanel>
 
             <!-- Doodler + Actions -->
@@ -77,26 +96,8 @@
                         BorderThickness="1">
                     <gl:Doodler x:Name="ClientDoodler"
                                 HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch">
-                        <gl:Doodler.Style>
-                            <Style TargetType="{x:Type gl:Doodler}">
-                                <Setter Property="IsEnabled"
-                                        Value="False" />
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsStarted}"
-                                                       Value="True" />
-                                            <Condition Binding="{Binding IsPlayerTurn}"
-                                                       Value="True" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="IsEnabled"
-                                                Value="True" />
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </gl:Doodler.Style>
-                    </gl:Doodler>
+                                VerticalAlignment="Stretch"
+                                Style="{StaticResource PlayerTurnDoodlerEnabledStyle}" />
                 </Border>
 
                 <StackPanel Orientation="Horizontal"
@@ -104,25 +105,9 @@
                             VerticalAlignment="Top"
                             Height="48"
                             Margin="0,8,8,0"
-                            Panel.ZIndex="10">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Setter Property="Visibility"
-                                    Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsStarted}"
-                                                   Value="True" />
-                                        <Condition Binding="{Binding IsPlayerTurn}"
-                                                   Value="True" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility"
-                                            Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
+                            Panel.ZIndex="10"
+                            Style="{StaticResource PlayerTurnVisibleStyle}">
+                    
                     <Button x:Name="UndoBtn"
                             Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
@@ -132,6 +117,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/undo.png" />
                         </Button.Background>
                     </Button>
+                    
                     <Button x:Name="ClearBtn"
                             Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
@@ -140,31 +126,14 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/clear.png" />
                         </Button.Background>
                     </Button>
+                    
                 </StackPanel>
 
                 <Button x:Name="StartBtn"
                         Width="100"
                         Height="100"
-                        Click="StartBtn_Click">
-                    <Button.Style>
-                        <Style TargetType="Button"
-                               BasedOn="{StaticResource DoodleButtonStyle}">
-                            <Setter Property="Visibility"
-                                    Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsHost}"
-                                                   Value="True" />
-                                        <Condition Binding="{Binding IsStarted}"
-                                                   Value="False" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility"
-                                            Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
+                        Click="StartBtn_Click"
+                        Style="{StaticResource HostStartVisibleButtonStyle}">
                     <Button.Background>
                         <ImageBrush ImageSource="pack://application:,,,/Images/start.png" />
                     </Button.Background>
@@ -174,44 +143,38 @@
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
                            FontSize="32"
-                           Margin="0 0 0 200">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock"
-                               BasedOn="{StaticResource {x:Type TextBlock}}">
-                            <Setter Property="Visibility"
-                                    Value="Visible" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsStarted}"
-                                             Value="True">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
+                           Margin="0 0 0 200"
+                           Style="{StaticResource VisibleUntilStartedStyle}">
                 </TextBlock>
+
+                <StackPanel x:Name="WordPanelWrapper"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical"
+                            Margin="0 0 0 100">
+
+                    <TextBlock Text="Choose a word"
+                               FontSize="32"
+                               Margin="25"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center">
+                    </TextBlock>
+
+                    <StackPanel x:Name="SelectWordPanel"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                    </StackPanel>
+                    
+                </StackPanel>
 
             </Grid>
 
             <!--Actions Grid-->
             <Grid Grid.Row="1">
                 <Grid.Style>
-                    <Style TargetType="Grid">
-                        <Setter Property="Visibility"
-                                Value="Collapsed" />
-                        <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding IsStarted}"
-                                               Value="True" />
-                                    <Condition Binding="{Binding IsPlayerTurn}"
-                                               Value="True" />
-                                </MultiDataTrigger.Conditions>
-                                <Setter Property="Visibility"
-                                        Value="Visible" />
-                            </MultiDataTrigger>
-                        </Style.Triggers>
-                    </Style>
+                    <Style TargetType="Grid"
+                           BasedOn="{StaticResource PlayerTurnVisibleStyle}" />
                 </Grid.Style>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -251,6 +214,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/1Thin.png" />
                         </Button.Background>
                     </Button>
+
                     <Button x:Name="FineBtn"
                             Margin="5 0 0 0"
                             Style="{StaticResource DoodleButtonStyle}"
@@ -262,6 +226,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/2Fine.png" />
                         </Button.Background>
                     </Button>
+
                     <Button x:Name="MediumBtn"
                             Margin="5 0 0 0"
                             Style="{StaticResource DoodleButtonStyle}"
@@ -273,6 +238,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/3Medium.png" />
                         </Button.Background>
                     </Button>
+
                     <Button x:Name="BoldBtn"
                             Margin="5 0 0 0"
                             Style="{StaticResource DoodleButtonStyle}"
@@ -284,6 +250,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/4Bold.png" />
                         </Button.Background>
                     </Button>
+
                     <Button x:Name="ThickBtn"
                             Margin="5 0 0 0"
                             Style="{StaticResource DoodleButtonStyle}"
@@ -295,12 +262,14 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/5Thick.png" />
                         </Button.Background>
                     </Button>
+
                 </StackPanel>
 
                 <!--Pen Type Buttons-->
                 <StackPanel Grid.Column="1"
                             Height="70"
                             Orientation="Horizontal">
+
                     <Button x:Name="PencilBtn"
                             Margin="5 0 0 0"
                             Style="{StaticResource DoodleButtonStyle}"
@@ -310,6 +279,7 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/pencil.png" />
                         </Button.Background>
                     </Button>
+
                     <Button x:Name="EraseBtn"
                             Margin="5 0 5 0"
                             Style="{StaticResource DoodleButtonStyle}"
@@ -319,7 +289,9 @@
                             <ImageBrush ImageSource="pack://application:,,,/Images/eraser.png" />
                         </Button.Background>
                     </Button>
+
                 </StackPanel>
+
             </Grid>
         </Grid>
 
