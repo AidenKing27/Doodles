@@ -666,4 +666,18 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(name);
         return true;
     }
+
+    private async void RestartBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_client.ConnectedPlayers.Count > 1)
+        {
+            IsGameStarted = true;
+            IsEndGameSummaryVisible = false;
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendIsStarted(RoomActionType.Start, _roomCode, IsGameStarted));
+        }
+        else
+        {
+            MessageBox.Show("Room needs at least 2 players to restart game!");
+        }
+    }
 }

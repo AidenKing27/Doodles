@@ -275,7 +275,10 @@ public class Server
         room.IsGameStarted = true;
         room.Phase = RoomPhase.ChoosingWord;
         room.RoundsPlayed = 0;
-        room.PlayerQueue.Enqueue(room.Host);
+
+        if (!room.PlayerQueue.Any(p => p.PlayerData.GUID == room.Host.PlayerData.GUID))
+            room.PlayerQueue.Enqueue(room.Host);
+
         ServerMessageEvent?.Invoke($"[{room.Code}] Game starting");
         await StartRoundAsync(room);
 

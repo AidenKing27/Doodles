@@ -173,7 +173,7 @@
                 <Grid x:Name="RoundSummaryOverlay"
                       Visibility="{Binding IsRoundSummaryVisible, Converter={StaticResource BoolToVisibility}}">
                     <Border Width="620"
-                            MinHeight="420"
+                            MinHeight="520"
                             Padding="28"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
@@ -217,26 +217,37 @@
                 <Grid x:Name="EndGameOverlay"
                       Visibility="{Binding IsEndGameSummaryVisible, Converter={StaticResource BoolToVisibility}}">
                     <Border Width="620"
-                            MinHeight="420"
+                            MinHeight="520"
                             Padding="28"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
                         <Border.Background>
                             <ImageBrush ImageSource="pack://application:,,,/Images/card.png" />
                         </Border.Background>
-                        <StackPanel>
-                            <TextBlock Text="Game Over"
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="Game Over"
                                        FontSize="42"
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,4" />
 
-                            <TextBlock Text="Leaderboard"
+                            <TextBlock Grid.Row="1"
+                                       Text="Leaderboard"
                                        FontSize="20"
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,24" />
 
-                            <ItemsControl ItemsSource="{Binding EndGameRows}"
-                                          Margin="50 0 50 0">
+                            <ItemsControl Grid.Row="2"
+                                          ItemsSource="{Binding EndGameRows}"
+                                          Margin="50 0 50 0"
+                                          VerticalAlignment="Top">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0 4 0 4">
@@ -254,7 +265,25 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                        </StackPanel>
+
+                            <Button x:Name="RestartBtn"
+                                    Grid.Row="3"
+                                    Margin="5"
+                                    Content="Restart Game"
+                                    Style="{StaticResource DoodleButtonStyle}"
+                                    Width="170"
+                                    Height="40"
+                                    FontSize="16"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    Visibility="{Binding IsHost, Converter={StaticResource BoolToVisibility}}"
+                                    Click="RestartBtn_Click">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="pack://application:,,,/Images/frame_long.png" />
+                                </Button.Background>
+                            </Button>
+
+                        </Grid>
                     </Border>
                 </Grid>
 
