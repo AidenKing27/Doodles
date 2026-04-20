@@ -383,9 +383,17 @@
         <!--Right Grid-->
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
+                <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Text="{Binding RoomCodeText}"
+                       FontSize="40"
+                       Margin="0 15 25 0"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Top" />
 
             <!--Chat-->
             <ListBox x:Name="MessagesLst"
@@ -396,7 +404,7 @@
                      BorderBrush="Transparent"
                      HorizontalContentAlignment="Stretch"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     Grid.Row="0">
+                     Grid.Row="1">
                 <ListBox.Background>
                     <ImageBrush ImageSource="pack://application:,,,/Images/chat.png" />
                 </ListBox.Background>
@@ -410,7 +418,7 @@
 
             <!--Text Box Grid-->
             <Grid x:Name="TextBoxGrid"
-                  Grid.Row="1"
+                  Grid.Row="2"
                   Style="{StaticResource TextBoxGridEnabledStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

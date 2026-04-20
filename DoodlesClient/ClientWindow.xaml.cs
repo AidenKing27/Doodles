@@ -104,6 +104,8 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         set => SetField(ref _isEndGameSummaryVisible, value);
     }
 
+    public string RoomCodeText => $"{_roomCode}";
+
     // Joined Room
     public ClientWindow(string username, string roomCode, Client client)
     {
