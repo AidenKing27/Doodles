@@ -13,6 +13,9 @@
         Title="Doodles"
         Height="950"
         Width="1700">
+    <Window.Background>
+        <ImageBrush ImageSource="pack://application:,,,/Images/paper.png" />
+    </Window.Background>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
@@ -30,14 +33,14 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="120px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="50px" />
+                <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
 
             <Image Margin="20" Source="pack://application:,,,/Images/logo.png" />
 
             <!--Player List-->
             <StackPanel x:Name="PlayerList"
-                        Margin="5"
+                        Margin="15 5 5 5"
                         Grid.Row="1"
                         Orientation="Vertical">
             </StackPanel>
@@ -47,7 +50,7 @@
                     Content="Disconnect"
                     Style="{StaticResource DoodleButtonStyle}"
                     FontSize="16"
-                    Margin="5"
+                    Margin="15 5 5 5"
                     Click="DisconnectBtn_Click">
                 <Button.Background>
                     <ImageBrush ImageSource="pack://application:,,,/Images/disconnect.png" />
@@ -383,15 +386,15 @@
         <!--Right Grid-->
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="60px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="50px" />
+                <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0"
                        Text="{Binding RoomCodeText}"
                        FontSize="40"
-                       Margin="0 15 25 0"
+                       Margin="0 5 25 0"
                        HorizontalAlignment="Right"
                        VerticalAlignment="Top" />
 

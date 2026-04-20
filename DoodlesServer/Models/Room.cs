@@ -157,7 +157,7 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
         }
 
         Random rnd = new();
-        int revealCount = Math.Min(3, letterIndexes.Count / 2);
+        int revealCount = Math.Min(4, letterIndexes.Count / 2);
         int revealDuration = Math.Max(1, DoodleTime / 2);
         int requiredGuessers = Players.Count(p => p.PlayerData.GUID != CurrentTurnPlayerGuid);
         while (_timeRemaining > 0 && AllGuessedPlayers.Count < requiredGuessers)

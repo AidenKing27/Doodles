@@ -384,7 +384,7 @@ public class Server
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         room.RoundsPlayed++;
-        if (room.RoundsPlayed < room.MaxRounds)
+        if (room.RoundsPlayed < room.MaxRounds * room.Players.Count)
             await StartRoundAsync(room);
         else
             await EndGameAsync(room);

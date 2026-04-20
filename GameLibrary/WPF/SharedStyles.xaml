@@ -107,11 +107,6 @@
                 Value="Transparent" />
         <Setter Property="Padding"
                 Value="10,6" />
-        <Setter Property="Background">
-            <Setter.Value>
-                <ImageBrush ImageSource="pack://application:,,,/Images/textbox.png" />
-            </Setter.Value>
-        </Setter>
     </Style>
 
     <Style x:Key="TitleBtnStyle"
