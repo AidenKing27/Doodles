@@ -156,6 +156,8 @@ public class Server
         }
 
         DisconnectMessageEvent?.Invoke($"[SERVER]: {player.PlayerData.Username} disconnected from the server ({player.Client.Client.RemoteEndPoint})");
+        room!.PlayerQueue = new Queue<ServerPlayer>(room.PlayerQueue.Where(p => p.PlayerData.GUID == player.PlayerData.GUID));
+        room!.Players.Remove(player);
     }
 
     private async Task HandleMessage(Packet packet, ServerPlayer player)
@@ -279,6 +281,12 @@ public class Server
         if (!room.PlayerQueue.Any(p => p.PlayerData.GUID == room.Host.PlayerData.GUID))
             room.PlayerQueue.Enqueue(room.Host);
 
+        foreach (var player in room.Players)
+        {
+            player.PlayerData.Score = 0;
+            player.PlayerData.Place = 0;
+        }
+
         ServerMessageEvent?.Invoke($"[{room.Code}] Game starting");
         await StartRoundAsync(room);
 
@@ -295,6 +303,7 @@ public class Server
     private async Task HandleRoomInfoChosenWord(Room room, RoomInfo info)
     {
         room.BeginDoodling(info.ChosenWord!);
+        room.AllUsedWords.Add(room.CurrentWord);
         ServerMessageEvent?.Invoke($"[{room.Code}] Drawing phase started");
 
         foreach (ServerPlayer p in room.Players)

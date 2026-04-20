@@ -47,7 +47,7 @@
                         Orientation="Vertical">
             </StackPanel>
 
-            <Button x:Name="DisconnectBtn"
+            <!--<Button x:Name="DisconnectBtn"
                     Grid.Row="2"
                     Content="Disconnect"
                     Style="{StaticResource DoodleButtonStyle}"
@@ -57,7 +57,7 @@
                 <Button.Background>
                     <ImageBrush ImageSource="pack://application:,,,/Images/disconnect.png" />
                 </Button.Background>
-            </Button>
+            </Button>-->
         </Grid>
 
         <!--Main Grid-->

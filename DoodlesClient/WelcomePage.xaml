@@ -47,6 +47,7 @@
                      Style="{StaticResource MessageTextBoxStyleWelcome}"
                      Tag="Room code"
                      MaxLength="5"
+                     CharacterCasing="Upper"
                      Margin="5"
                      VerticalContentAlignment="Center"
                      PreviewTextInput="CodeTxt_PreviewTextInput"

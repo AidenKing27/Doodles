@@ -45,7 +45,7 @@ public partial class CreateRoom : Window
 
     private string GenerateRoomCode()
     {
-        string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        string chars = "ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789";
         Random rnd = new();
         StringBuilder sb = new();
 
