@@ -420,18 +420,10 @@
                 <!--Text Box-->
                 <TextBox x:Name="MessageTxt"
                          Grid.Column="0"
+                         Style="{StaticResource MessageTextBoxStyle}"
                          Margin="5"
-                         FontFamily="Comic Sans MS"
-                         FontSize="16"
-                         Foreground="#1F2937"
-                         BorderThickness="0"
-                         BorderBrush="Transparent"
-                         Padding="10, 6"
                          VerticalContentAlignment="Center"
                          MaxLength="20">
-                    <TextBox.Background>
-                        <ImageBrush ImageSource="pack://application:,,,/Images/textbox.png" />
-                    </TextBox.Background>
                 </TextBox>
 
                 <!--Send-->

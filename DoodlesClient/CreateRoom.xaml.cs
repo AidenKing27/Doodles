@@ -51,8 +51,7 @@ public partial class CreateRoom : Window
 
         for (int i = 0; i < 5; i++)
             sb.Append(chars[rnd.Next(chars.Length)]);
-        //return sb.ToString();
-        return "12345";
+        return sb.ToString();
     }
 
     private void ClientWindow_Closed(object? sender, EventArgs e) => Application.Current.Shutdown();

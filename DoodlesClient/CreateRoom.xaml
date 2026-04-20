@@ -87,9 +87,13 @@
         
         <Button x:Name="CreateBtn"
                 Grid.Row="1"
+                Style="{StaticResource DoodleButtonStyle}"
                 Content="Create Room"
                 Margin="5"
                 Click="CreateBtn_Click">
+            <Button.Background>
+                <ImageBrush ImageSource="pack://application:,,,/Images/playercard_green.png" />
+            </Button.Background>
 
         </Button>
     </Grid>

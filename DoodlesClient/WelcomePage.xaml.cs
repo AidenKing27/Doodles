@@ -51,10 +51,7 @@ public partial class WelcomePage : Window
         }
         else
         {
-            string x = string.Empty;
-            foreach (var y in _roomCodes)
-                x += $"{y},";
-            MessageBox.Show($"Room Code {_roomCode} does not exist! Create a room or join a valid room. Room Codes: {x.Trim(',')}");
+            MessageBox.Show($"Room Code {_roomCode} does not exist! Create a room or join a valid room.");
             CodeTxt.Clear();
         }
     }
