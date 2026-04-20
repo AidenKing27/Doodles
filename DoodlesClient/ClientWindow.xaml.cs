@@ -2,6 +2,7 @@
 using GameLibrary.Core;
 using GameLibrary.Enums;
 using GameLibrary.Models;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -21,6 +22,9 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     private readonly string _roomCode;
     private Guid _currentTurnPlayerGuid;
     private string _currentTurnUsername;
+
+    public ObservableCollection<RoundSummaryRow> RoundSummaryRows { get; } = [];
+    public ObservableCollection<RoundSummaryRow> EndGameRows { get; } = [];
 
     public bool IsPlayerTurn
     {
@@ -72,6 +76,34 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         set => SetField(ref _nonPlayerInfoText, value);
     }
 
+    private bool _isRoundSummaryVisible;
+    public bool IsRoundSummaryVisible
+    {
+        get => _isRoundSummaryVisible;
+        set => SetField(ref _isRoundSummaryVisible, value);
+    }
+    
+    private string _roundEndWordText = "The word was";
+    public string RoundEndWordText
+    {
+        get => _roundEndWordText;
+        set => SetField(ref _roundEndWordText, value);
+    }
+
+    private string _roundEndSubText = string.Empty;
+    public string RoundEndSubText
+    {
+        get => _roundEndSubText;
+        set => SetField(ref _roundEndSubText, value);
+    }
+
+    private bool _isEndGameSummaryVisible;
+    public bool IsEndGameSummaryVisible
+    {
+        get => _isEndGameSummaryVisible;
+        set => SetField(ref _isEndGameSummaryVisible, value);
+    }
+
     // Joined Room
     public ClientWindow(string username, string roomCode, Client client)
     {
@@ -114,10 +146,12 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
 
         _client.RoomGameStartedEvent += Client_RoomGameStartedEvent;
         _client.RoomSelectPlayerEvent += Client_RoomSelectPlayerEvent;
-        _client.RoomWordsEvent += Client_RoomWordsEvent;
+        _client.RoomWordListEvent += Client_RoomWordListEvent;
         _client.RoomRoundStartEvent += Client_RoomRoundStartEvent;
+        _client.RoomDrawingStartedEvent += Client_RoomDrawingStartedEvent;
         _client.RoomRevealLetterEvent += Client_RoomRevealLetterEvent;
         _client.RoomRoundEndEvent += Client_RoomRoundEndEvent;
+        _client.RoomGameEndEvent += Client_RoomGameEndEvent;
         _client.RoomRankUpdateEvent += Client_RoomRankUpdateEvent;
 
         // Joined Room
@@ -208,6 +242,9 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     {
         Dispatcher.Invoke(() =>
         {
+            IsRoundSummaryVisible = false;
+            IsEndGameSummaryVisible = false;
+
             _currentTurnPlayerGuid = info.CurrentTurnPlayer!.GUID;
             _currentTurnUsername = info.CurrentTurnPlayer!.Username;
 
@@ -220,6 +257,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
                 card.UpdateIsDrawing(card.PlayerGuid == _currentTurnPlayerGuid);
 
             ListBoxItem playerIsDrawing = new();
+            playerIsDrawing.FontWeight = FontWeights.Bold;
             playerIsDrawing.Content = $"{_currentTurnUsername} is doodling now!";
             playerIsDrawing.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9871B3"));
 
@@ -234,14 +272,11 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
             if (info.IsGameStarted is true)
                 IsGameStarted = true;
 
-            ShowWords = true;
-
-            if (!IsPlayerTurn)
-                NonPlayerInfoText = $"Player {_currentTurnUsername} is choosing a word...";
+            IsEndGameSummaryVisible = false;
         });
     }
 
-    private void Client_RoomWordsEvent(RoomInfo info)
+    private void Client_RoomWordListEvent(RoomInfo info)
     {
         Dispatcher.Invoke(() =>
         {
@@ -275,7 +310,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         {
             string chosenWord = (string)button.Content;
             await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendChosenWord(RoomActionType.ChosenWord, _roomCode, chosenWord));
-            DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette["White"]));
+            SetDoodlerBackground("White");
         }
     }
 
@@ -317,9 +352,28 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     {
         Dispatcher.Invoke(() =>
         {
+            IsRoundSummaryVisible = false;
+            IsEndGameSummaryVisible = false;
+            ShowWords = true;
+            ClientDoodler.RequestClear();
+
+            if (!IsPlayerTurn)
+                NonPlayerInfoText = $"Player {_currentTurnUsername} is choosing a word...";
+        });
+    }
+
+    private void Client_RoomDrawingStartedEvent(RoomInfo info)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            SetDoodlerBackground("White");
+            IsRoundSummaryVisible = false;
+            IsEndGameSummaryVisible = false;
             IsRoundActive = (bool)info.IsRoundActive!;
             ShowWords = false;
-            SetDoodlerBackground("White");
+
+            foreach (var card in PlayerList.Children.OfType<PlayerCardControl>().ToList())
+                card.UpdateColour("white");
 
             WordHint.Children.Clear();
             string chosenWord = info.ChosenWord!;
@@ -350,6 +404,12 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
         {
             Dictionary<Guid, PlayerRankPair> dict = info.PlayerRankings!;
 
+            foreach (ClientPlayer player in _client.ConnectedPlayers)
+            {
+                if (dict.TryGetValue(player.PlayerData.GUID, out PlayerRankPair? pair))
+                    player.PlayerData.Score = pair.Score;
+            }
+
             var allCards = PlayerList.Children.OfType<PlayerCardControl>().ToList();
             for (int i = 0; i < allCards.Count; i++)
             {
@@ -357,10 +417,13 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
                 allCards[i].UpdateRankAndScore(pair.Rank, pair.Score);
             }
 
+            if (info.CorrectGuesser is null)
+                return;
+
             PlayerCardControl cardToUpdateColour = allCards.FirstOrDefault(c => c.PlayerGuid == info.CorrectGuesser!.GUID)!;
             cardToUpdateColour.UpdateColour((cardToUpdateColour.CardIndex % 2 == 0)
-                        ? "#54FF83"
-                        : "#44D16C");
+                        ? "lightgreen"
+                        : "green");
 
             ListBoxItem correctGuess = new();
             correctGuess.Content = $"{info.CorrectGuesser!.Username} guessed the word!";
@@ -373,9 +436,60 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
 
     private void Client_RoomRoundEndEvent(RoomInfo info)
     {
-        IsRoundActive = !(bool)info.IsRoundActive!;
+        Dispatcher.Invoke(() =>
+        {
+            SetDoodlerBackground("grey");
+            IsRoundActive = (bool)info.IsRoundActive!;
 
+            RoundEndWordText = $"The word was {info.ChosenWord}";
+            RoundEndSubText = (bool)info.EndedByTime! ? $"Time is up!" : "Everyone guessed it!";
 
+            RoundSummaryRows.Clear();
+
+            Dictionary<Guid, int> roundPoints = info.RoundPoints ?? [];
+
+            var orderedRoundRows = _client.ConnectedPlayers
+                .Select(player => new RoundSummaryRow
+                {
+                    Username = player.PlayerData.Username,
+                    Score = roundPoints.TryGetValue(player.PlayerData.GUID, out int points) ? points : 0
+                })
+                .OrderByDescending(row => row.Score)
+                .ThenBy(row => row.Username);
+
+            foreach (RoundSummaryRow row in orderedRoundRows)
+                RoundSummaryRows.Add(row);
+
+            IsRoundSummaryVisible = true;
+        });
+    }
+
+    private void Client_RoomGameEndEvent(RoomInfo info)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            SetDoodlerBackground("grey");
+            IsRoundActive = false;
+            IsGameStarted = false;
+            ShowWords = false;
+
+            IsRoundSummaryVisible = false;
+
+            EndGameRows.Clear();
+            Dictionary<Guid, string> usernames = _client.ConnectedPlayers
+                .ToDictionary(p => p.PlayerData.GUID, p => p.PlayerData.Username);
+
+            foreach (var ranking in info.PlayerRankings!.OrderBy(kvp => kvp.Value.Rank))
+            {
+                EndGameRows.Add(new RoundSummaryRow
+                {
+                    Username = usernames.TryGetValue(ranking.Key, out string? username) ? username : "Unknown",
+                    Score = ranking.Value.Score
+                });
+            }
+
+            IsEndGameSummaryVisible = true;
+        });
     }
 
     private void BuildPaletteButtons()
@@ -466,7 +580,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     private async void SendBtn_Click(object sender, RoutedEventArgs e)
     {
         if (IsRoundActive)
-            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendGuess(RoomActionType.Guess, _roomCode, MessageTxt.Text));
+            await PacketHelper.SendPacketToServer(_client, PacketType.RoomInfo, RoomInfo.SendGuess(RoomActionType.Guess, _roomCode, new Message(_username, MessageTxt.Text)));
         else
             await PacketHelper.SendPacketToServer(_client, PacketType.Message, new Message(_username, MessageTxt.Text));
         MessageTxt.Clear();
@@ -493,7 +607,12 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     {
         Dispatcher.Invoke(() =>
         {
-            MessagesLst.Items.Add(message);
+            ListBoxItem connectMessage = new();
+            connectMessage.Content = message;
+            connectMessage.FontWeight = FontWeights.Bold;
+            connectMessage.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3F48CC"));
+            MessagesLst.Items.Add(connectMessage);
+
             SetPlayerCard(connectedPlayers);
         });
     }
@@ -514,7 +633,13 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
 
     private void SetDoodlerBackground(string colour)
     {
-        DoodlerGrid.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(Doodler.Palette[$"{colour}"]));
+        ImageBrush brush = new()
+        {
+            ImageSource = new BitmapImage(new Uri($"pack://application:,,,/Images/doodler_border_{colour}.png", UriKind.Absolute)),
+            Stretch = Stretch.Fill
+        };
+        brush.Freeze();
+        DoodlerGrid.Background = brush;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -4,8 +4,9 @@ using System.IO;
 
 namespace DoodlesServer.Models;
 
-public class Room(ServerPlayer host, string code, int playerCount, int doodleTime, int rounds, List<ServerPlayer> players)
+public class Room(ServerPlayer host, string code, int playerCount, int doodleTime, int maxRounds, List<ServerPlayer> players)
 {
+
     public delegate Task RoomLetterHandler(Room room, char letter, int index);
     public event RoomLetterHandler? RevealLetterEvent;
 
@@ -14,20 +15,59 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
 
     private const int MAX_POINTS = 300;
     private int _timeRemaining;
+    private bool _endedByTime;
+    private TaskCompletionSource<bool> _allGuessedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public ServerPlayer Host { get; set; } = host;
     public string Code { get; set; } = code;
     public int MaxPlayerCount { get; set; } = playerCount;
     public int DoodleTime { get; set; } = doodleTime;
-    public int Rounds { get; set; } = rounds;
+    public int MaxRounds { get; set; } = maxRounds;
     public bool IsGameStarted { get; set; }
     public bool IsRoundStarted { get; set; }
     public List<ServerPlayer> Players { get; set; } = players;
     public Queue<ServerPlayer> PlayerQueue { get; set; } = [];
     public ConcurrentQueue<DoodleInfo> DoodleQueue { get; set; } = [];
+    public ConcurrentQueue<DoodleInfo> RoundDoodles { get; set; } = [];
+    public ConcurrentQueue<RevealedLetters> RevealedLetters { get; set; } = [];
     public string CurrentWord { get; set; } = string.Empty;
     public List<string> AllUsedWords { get; set; } = [];
-    public List<PlayerData> AllGuessedPlayers { get; set; } = [];
+    public ConcurrentDictionary<Guid, PlayerData> AllGuessedPlayers { get; set; } = [];
+    public Dictionary<Guid, int> RoundStartScores { get; set; } = [];
+    public Guid CurrentTurnPlayerGuid { get; set; }
+    public int RoundsPlayed { get; set; }
+    public RoomPhase Phase { get; set; } = RoomPhase.Lobby;
+    public bool EndedByTime => _endedByTime;
+
+    public void BeginRound()
+    {
+        CurrentWord = string.Empty;
+        IsRoundStarted = false;
+        Phase = RoomPhase.ChoosingWord;
+
+        DoodleQueue.Clear();
+        RoundDoodles.Clear();
+        RevealedLetters.Clear();
+    }
+
+    public void BeginDoodling(string chosenWord)
+    {
+        CurrentWord = chosenWord;
+        IsRoundStarted = true;
+        Phase = RoomPhase.Drawing;
+
+        DoodleQueue.Clear();
+        RoundDoodles.Clear();
+        RevealedLetters.Clear();
+    }
+
+    public void TryCompleteRoundIfAllGuessed()
+    {
+        int requiredGuessers = Players.Count(p => p.PlayerData.GUID != CurrentTurnPlayerGuid);
+        if (AllGuessedPlayers.Count >= requiredGuessers)
+            _allGuessedTcs.TrySetResult(true);
+        _endedByTime = false;
+    }
 
     public List<string> GetThreeRandomWords()
     {
@@ -50,7 +90,10 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
 
     public int GetGuessScore()
     {
-        double ratio = _timeRemaining / DoodleTime;
+        if (DoodleTime <= 0)
+            return 0;
+
+        double ratio = (double)_timeRemaining / DoodleTime;
         return (int)Math.Round(MAX_POINTS * ratio);
     }
 
@@ -67,13 +110,32 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
         return rankingDictionary;
     }
 
-    public async Task RunRoundAsync(CancellationToken cancellationToken = default)
+    public Dictionary<Guid, int> GetRoundPoints()
+    {
+        Dictionary<Guid, int> roundPoints = [];
+
+        foreach (ServerPlayer player in Players)
+        {
+            int startScore = RoundStartScores.TryGetValue(player.PlayerData.GUID, out int score) ? score : player.PlayerData.Score;
+            roundPoints[player.PlayerData.GUID] = player.PlayerData.Score - startScore;
+        }
+
+        return roundPoints;
+    }
+
+    private void InitializeRound()
     {
         AllGuessedPlayers.Clear();
-
-        IsRoundStarted = true;
+        RoundStartScores = Players.ToDictionary(p => p.PlayerData.GUID, p => p.PlayerData.Score);
+        _allGuessedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _endedByTime = false;
         _timeRemaining = DoodleTime;
-        int revealDuration = Math.Max(1, DoodleTime / 2);
+        IsRoundStarted = true;
+    }
+
+    public async Task RunRoundAsync(CancellationToken cancellationToken = default)
+    {
+        InitializeRound();
 
         Dictionary<int, char> letterIndexes = [];
         for (int i = 0; i < CurrentWord.Length; i++)
@@ -82,14 +144,34 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
                 letterIndexes.Add(i, CurrentWord[i]);
         }
 
-        int revealCount = Math.Min(3, letterIndexes.Count / 2);
         Random rnd = new();
-
-        while (_timeRemaining > 0 && AllGuessedPlayers.Count < Players.Count - 1)
+        int revealCount = Math.Min(3, letterIndexes.Count / 2);
+        int revealDuration = Math.Max(1, DoodleTime / 2);
+        int requiredGuessers = Players.Count(p => p.PlayerData.GUID != CurrentTurnPlayerGuid);
+        while (_timeRemaining > 0 && AllGuessedPlayers.Count < requiredGuessers)
         {
             int wait = Math.Min(revealDuration, _timeRemaining);
-            await Task.Delay(TimeSpan.FromSeconds(wait), cancellationToken);
-            _timeRemaining -= wait;
+
+            bool endedEarly = false;
+            for (int i = 0; i < wait; i++)
+            {
+                Task delayTask = Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                Task completedTask = await Task.WhenAny(delayTask, _allGuessedTcs.Task);
+
+                if (completedTask == _allGuessedTcs.Task)
+                {
+                    endedEarly = true;
+                    break;
+                }
+
+                _timeRemaining--;
+                if (_timeRemaining <= 0)
+                    break;
+            }
+
+            if (endedEarly)
+                break;
+
             revealDuration = Math.Max(1, revealDuration / 2);
 
             if (_timeRemaining > 0 && revealCount > 0 && letterIndexes.Count > 0)
@@ -103,6 +185,7 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
             }
         }
 
+        _endedByTime = _timeRemaining <= 0 && AllGuessedPlayers.Count < requiredGuessers;
         IsRoundStarted = false;
         await InvokeEndRoundEventAsync();
     }

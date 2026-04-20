@@ -1,8 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace DoodlesClient;
 
@@ -78,9 +80,15 @@ public partial class PlayerCardControl : UserControl, INotifyPropertyChanged
         Score = $"Points: {score}";
     }
 
-    public void UpdateColour(string hex)
+    public void UpdateColour(string colour)
     {
-        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+        ImageBrush brush = new()
+        {
+            ImageSource = new BitmapImage(new Uri($"pack://application:,,,/Images/playercard_{colour}.png", UriKind.Absolute)),
+            Stretch = Stretch.Fill
+        };
+        brush.Freeze();
+        Background = brush;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

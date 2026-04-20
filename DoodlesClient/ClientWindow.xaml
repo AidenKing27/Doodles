@@ -30,7 +30,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
 
             <Label Content="Doodles"
@@ -43,14 +43,19 @@
             <StackPanel x:Name="PlayerList"
                         Margin="5"
                         Grid.Row="1"
-                        Orientation="Vertical" />
+                        Orientation="Vertical">
+            </StackPanel>
 
             <Button x:Name="DisconnectBtn"
                     Grid.Row="2"
                     Content="Disconnect"
+                    Style="{StaticResource DoodleButtonStyle}"
+                    FontSize="16"
                     Margin="5"
                     Click="DisconnectBtn_Click">
-
+                <Button.Background>
+                    <ImageBrush ImageSource="pack://application:,,,/Images/disconnect.png" />
+                </Button.Background>
             </Button>
         </Grid>
 
@@ -74,29 +79,30 @@
             <!-- Doodler + Actions -->
             <Grid x:Name="DoodlerGrid"
                   Grid.Row="1"
-                  Background="LightGray"
                   Margin="5">
-                <Border BorderBrush="#C3C3C3"
-                        BorderThickness="1">
-                    <gl:Doodler x:Name="ClientDoodler"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                Style="{StaticResource PlayerTurnDoodlerEnabledStyle}">
-                    </gl:Doodler>
-                </Border>
+                <Grid.Background>
+                    <ImageBrush ImageSource="pack://application:,,,/Images/doodler_border_grey.png" />
+                </Grid.Background>
+
+                <gl:Doodler x:Name="ClientDoodler"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Margin="6"
+                            Style="{StaticResource PlayerTurnDoodlerEnabledStyle}">
+                </gl:Doodler>
 
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
                             Height="48"
-                            Margin="0,8,8,0"
+                            Margin="0 12 12 0"
                             Panel.ZIndex="10"
                             Style="{StaticResource PlayerTurnVisibleStyle}">
 
                     <Button x:Name="UndoBtn"
                             Style="{StaticResource DoodleButtonStyle}"
                             Width="48"
-                            Margin="0,0,5,0"
+                            Margin="0 0 5 0"
                             Click="UndoBtn_Click">
                         <Button.Background>
                             <ImageBrush ImageSource="pack://application:,,,/Images/undo.png" />
@@ -162,6 +168,94 @@
                            HorizontalAlignment="Center"
                            Style="{StaticResource NonPlayerInfoVisibleStyle}">
                 </TextBlock>
+
+                <Grid x:Name="RoundSummaryOverlay"
+                      Visibility="{Binding IsRoundSummaryVisible, Converter={StaticResource BoolToVisibility}}">
+                    <Border Width="620"
+                            MinHeight="420"
+                            Padding="28"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <Border.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/card.png" />
+                        </Border.Background>
+                        <StackPanel>
+                            <TextBlock Text="{Binding RoundEndWordText}"
+                                       FontSize="42"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,4" />
+
+                            <TextBlock Text="{Binding RoundEndSubText}"
+                                       FontSize="20"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,24" />
+
+                            <ItemsControl ItemsSource="{Binding RoundSummaryRows}"
+                                          Margin="50 0 50 0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0 4 0 4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding Username}"
+                                                       FontSize="26" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Score}"
+                                                       FontSize="26" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="EndGameOverlay"
+                      Visibility="{Binding IsEndGameSummaryVisible, Converter={StaticResource BoolToVisibility}}">
+                    <Border Width="620"
+                            MinHeight="420"
+                            Padding="28"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <Border.Background>
+                            <ImageBrush ImageSource="pack://application:,,,/Images/card.png" />
+                        </Border.Background>
+                        <StackPanel>
+                            <TextBlock Text="Game Over"
+                                       FontSize="42"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,4" />
+
+                            <TextBlock Text="Leaderboard"
+                                       FontSize="20"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,24" />
+
+                            <ItemsControl ItemsSource="{Binding EndGameRows}"
+                                          Margin="50 0 50 0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0 4 0 4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding Username}"
+                                                       FontSize="26" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Score}"
+                                                       FontSize="26" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
 
             </Grid>
 
@@ -295,38 +389,68 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
 
             <!--Chat-->
             <ListBox x:Name="MessagesLst"
                      Margin="5"
                      FontSize="16"
+                     BorderThickness="0"
+                     Padding="10"
+                     BorderBrush="Transparent"
+                     HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      Grid.Row="1">
+                <ListBox.Background>
+                    <ImageBrush ImageSource="pack://application:,,,/Images/chat.png" />
+                </ListBox.Background>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"
+                                   TextWrapping="Wrap" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
             </ListBox>
 
             <!--Text Box Grid-->
-            <Grid Grid.Row="2">
+            <Grid x:Name="TextBoxGrid"
+                  Grid.Row="2"
+                  Style="{StaticResource TextBoxGridEnabledStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="53px" />
+                    <ColumnDefinition Width="58px" />
                 </Grid.ColumnDefinitions>
 
                 <!--Text Box-->
                 <TextBox x:Name="MessageTxt"
                          Grid.Column="0"
                          Margin="5"
-                         MaxLength="30">
-
+                         FontFamily="Comic Sans MS"
+                         FontSize="16"
+                         Foreground="#1F2937"
+                         BorderThickness="0"
+                         BorderBrush="Transparent"
+                         Padding="10, 6"
+                         VerticalContentAlignment="Center"
+                         MaxLength="20">
+                    <TextBox.Background>
+                        <ImageBrush ImageSource="pack://application:,,,/Images/textbox.png" />
+                    </TextBox.Background>
                 </TextBox>
 
                 <!--Send-->
                 <Button x:Name="SendBtn"
                         Grid.Column="1"
                         Margin="0 5 5 5"
-                        Width="48"
+                        Style="{StaticResource DoodleButtonStyle}"
+                        Width="53"
+                        IsDefault="True"
                         Content="Send"
                         Click="SendBtn_Click">
+                    <Button.Background>
+                        <ImageBrush ImageSource="pack://application:,,,/Images/send_button.png" />
+                    </Button.Background>
                 </Button>
             </Grid>
         </Grid>

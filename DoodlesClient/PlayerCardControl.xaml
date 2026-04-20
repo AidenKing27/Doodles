@@ -6,11 +6,15 @@
              xmlns:local="clr-namespace:DoodlesClient"
              mc:Ignorable="d"
              DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             Margin="0 0 0 5"
              d:DesignHeight="62"
              d:DesignWidth="330">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
+    <UserControl.Background>
+        <ImageBrush ImageSource="/playercard.png" />
+    </UserControl.Background>
 
     <Grid Margin="2">
 
@@ -30,6 +34,7 @@
                        Grid.Column="0"
                        Text="#1"
                        Padding="0"
+                       Margin="5 0 0 0"
                        FontSize="16"
                        VerticalAlignment="Top"
                        HorizontalAlignment="Left">
@@ -40,7 +45,7 @@
                    Height="24"
                    Source="pack://application:,,,/Images/host.png"
                    Visibility="{Binding IsHost, Converter={StaticResource BoolToVisibility}}"
-                   Margin="0,20,34,14"
+                   Margin="3,20,31,14"
                    Grid.RowSpan="2">
             </Image>
         </Grid>
@@ -55,6 +60,7 @@
                        Grid.Row="0"
                        Text="{Binding Username}"
                        Padding="0"
+                       Margin="0 4 0 0"
                        FontSize="20"
                        VerticalAlignment="Center">
             </TextBlock>
@@ -72,8 +78,17 @@
                Grid.Column="2"
                Width="58"
                Height="58"
-               Source="pack://application:,,,/Images/pencil2.png"
-               Visibility="{Binding IsDrawing, Converter={StaticResource BoolToVisibility}}">
+               Source="pack://application:,,,/Images/pencil2.png">
+            <Image.Style>
+                <Style TargetType="Image">
+                    <Setter Property="Visibility" Value="Hidden" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsDrawing}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Image.Style>
         </Image>
 
 

@@ -8,7 +8,9 @@ public enum RoomActionType
     ChosenWord,
     RevealedLetter,
     RoundStart,
+    DrawingStarted,
     RoundEnd,
+    GameEnd,
     Guess,
     RoomUpdate
 }

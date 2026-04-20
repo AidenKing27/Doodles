@@ -16,12 +16,6 @@ public class Doodler : FrameworkElement
     public event ActionHandler? DoodleUndoEvent;
     public event ActionHandler? DoodleClearEvent;
 
-    //public delegate void PencilEraseHandler(bool isErasing);
-    //public event PencilEraseHandler DoodlePencilEraseEvent;
-
-    //public delegate void ThicknessHandler(int thickness);
-    //public event ThicknessHandler DoodleThicknessEvent;
-
     public bool IsErasing { get; set; }
     public int UserThickness { get; set; } = 12;
     public Color UserColour { get; set; } = (Color)ColorConverter.ConvertFromString(Palette["Black"]);
@@ -124,13 +118,11 @@ public class Doodler : FrameworkElement
     public void RequestPencilErase(bool isErasing)
     {
         PerformPencilErase(isErasing);
-        //DoodlePencilEraseEvent?.Invoke(isErasing);
     }
 
     public void RequestSetThickness(int thickness)
     {
         PerformSetThickness(thickness);
-        //DoodleThicknessEvent?.Invoke(thickness);
     }
 
     #endregion Events

@@ -41,10 +41,12 @@ public class Client
     public delegate void ClientRoomInfoHandler(RoomInfo info);
     public event ClientRoomInfoHandler? RoomGameStartedEvent;
     public event ClientRoomInfoHandler? RoomSelectPlayerEvent;
-    public event ClientRoomInfoHandler? RoomWordsEvent;
+    public event ClientRoomInfoHandler? RoomWordListEvent;
     public event ClientRoomInfoHandler? RoomRoundStartEvent;
+    public event ClientRoomInfoHandler? RoomDrawingStartedEvent;
     public event ClientRoomInfoHandler? RoomRevealLetterEvent;
     public event ClientRoomInfoHandler? RoomRoundEndEvent;
+    public event ClientRoomInfoHandler? RoomGameEndEvent;
     public event ClientRoomInfoHandler? RoomRankUpdateEvent;
 
     public bool IsConnected => client?.Connected ?? false;
@@ -178,11 +180,15 @@ public class Client
                 break;
 
             case RoomActionType.WordList:
-                RoomWordsEvent?.Invoke(roomInfo);
+                RoomWordListEvent?.Invoke(roomInfo);
                 break;
 
             case RoomActionType.RoundStart:
                 RoomRoundStartEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.DrawingStarted:
+                RoomDrawingStartedEvent?.Invoke(roomInfo);
                 break;
 
             case RoomActionType.RevealedLetter:
@@ -191,6 +197,10 @@ public class Client
 
             case RoomActionType.RoundEnd:
                 RoomRoundEndEvent?.Invoke(roomInfo);
+                break;
+
+            case RoomActionType.GameEnd:
+                RoomGameEndEvent?.Invoke(roomInfo);
                 break;
 
             case RoomActionType.RoomUpdate:
