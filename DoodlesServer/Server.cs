@@ -324,7 +324,7 @@ public class Server
 
         if (!room.AllGuessedPlayers.TryAdd(player.PlayerData.GUID, player.PlayerData)) return;
 
-        player.PlayerData.Score = room.GetGuessScore();
+        player.PlayerData.Score += room.GetGuessScore();
 
         foreach (ServerPlayer p in room.Players)
         {
