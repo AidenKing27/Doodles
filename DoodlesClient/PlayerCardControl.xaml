@@ -13,7 +13,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
     <UserControl.Background>
-        <ImageBrush ImageSource="/playercard.png" />
+        <ImageBrush ImageSource="pack://application:,,,/Images/playercard_white.png" />
     </UserControl.Background>
 
     <Grid Margin="2">

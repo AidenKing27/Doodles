@@ -28,16 +28,12 @@
         <!--Left Grid-->
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="120px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
 
-            <Label Content="Doodles"
-                   VerticalAlignment="Center"
-                   Margin="10 0 0 0"
-                   FontSize="32">
-            </Label>
+            <Image Margin="20" Source="pack://application:,,,/Images/logo.png" />
 
             <!--Player List-->
             <StackPanel x:Name="PlayerList"
@@ -62,7 +58,7 @@
         <!--Main Grid-->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="60px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
@@ -387,7 +383,6 @@
         <!--Right Grid-->
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
@@ -401,7 +396,7 @@
                      BorderBrush="Transparent"
                      HorizontalContentAlignment="Stretch"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     Grid.Row="1">
+                     Grid.Row="0">
                 <ListBox.Background>
                     <ImageBrush ImageSource="pack://application:,,,/Images/chat.png" />
                 </ListBox.Background>
@@ -415,7 +410,7 @@
 
             <!--Text Box Grid-->
             <Grid x:Name="TextBoxGrid"
-                  Grid.Row="2"
+                  Grid.Row="1"
                   Style="{StaticResource TextBoxGridEnabledStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

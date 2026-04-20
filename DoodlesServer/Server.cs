@@ -359,6 +359,20 @@ public class Server
         room.Phase = RoomPhase.RoundSummary;
         ServerMessageEvent?.Invoke($"[{room.Code}] Round ended ({(room.EndedByTime ? "time" : "guesses")})");
 
+        ServerPlayer? drawer = room.Players.FirstOrDefault(p => p.PlayerData.GUID == room.CurrentTurnPlayerGuid);
+        if (drawer is not null)
+            drawer.PlayerData.Score += room.GetDrawerScore();
+
+        Dictionary<Guid, PlayerRankPair> rankingSnapshot = room.GetRankOrder();
+
+        foreach (ServerPlayer p in room.Players)
+        {
+            await BroadcastMessage(
+                p.Client,
+                PacketType.RoomInfo,
+                RoomInfo.SendRankingSnapshot(RoomActionType.RoomUpdate, room.Code, rankingSnapshot));
+        }
+
         foreach (ServerPlayer p in room.Players)
         {
             await BroadcastMessage(

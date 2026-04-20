@@ -7,6 +7,9 @@ namespace GameLibrary.Core;
 
 public class Doodler : FrameworkElement
 {
+    public const int DefaultBrushThickness = 12;
+    public const string DefaultBrushHex = "#000000";
+
     public delegate void PointHandler(Point p);
     public event PointHandler? DoodleMouseDownEvent;
     public event PointHandler? DoodleMouseMoveEvent;
@@ -17,8 +20,8 @@ public class Doodler : FrameworkElement
     public event ActionHandler? DoodleClearEvent;
 
     public bool IsErasing { get; set; }
-    public int UserThickness { get; set; } = 12;
-    public Color UserColour { get; set; } = (Color)ColorConverter.ConvertFromString(Palette["Black"]);
+    public int UserThickness { get; set; } = DefaultBrushThickness;
+    public Color UserColour { get; set; } = (Color)ColorConverter.ConvertFromString(DefaultBrushHex);
     public List<DrawingVisual> Doodles { get; set; } = new();
     public DrawingVisual CurrentStroke { get; set; }
     public List<Point> CurrentPoints { get; set; } = new();
@@ -125,6 +128,11 @@ public class Doodler : FrameworkElement
         PerformSetThickness(thickness);
     }
 
+    public void RequestResetBrushSettings()
+    {
+        PerformResetBrushSettings();
+    }
+
     #endregion Events
 
     #region Public Accessors
@@ -184,6 +192,13 @@ public class Doodler : FrameworkElement
     public void PerformSetThickness(int thickness)
     {
         UserThickness = thickness;
+    }
+
+    public void PerformResetBrushSettings()
+    {
+        IsErasing = false;
+        UserThickness = DefaultBrushThickness;
+        UserColour = (Color)ColorConverter.ConvertFromString(DefaultBrushHex);
     }
 
     #endregion Public Accessors

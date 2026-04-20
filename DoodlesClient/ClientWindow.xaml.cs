@@ -127,6 +127,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         BuildPaletteButtons();
+        ResetBrushSettings();
 
         ClientDoodler.DoodleMouseDownEvent += ClientDoodler_DoodleMouseDownEvent;
         ClientDoodler.DoodleMouseMoveEvent += ClientDoodler_DoodleMouseMoveEvent;
@@ -356,6 +357,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
             IsEndGameSummaryVisible = false;
             ShowWords = true;
             ClientDoodler.RequestClear();
+            ResetBrushSettings();
 
             if (!IsPlayerTurn)
                 NonPlayerInfoText = $"Player {_currentTurnUsername} is choosing a word...";
@@ -530,6 +532,14 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
             ClientDoodler.UserColour = (Color)ColorConverter.ConvertFromString((string)button.Tag);
             SelectedColour.Source = new BitmapImage(new Uri($"pack://application:,,,/Images/Frames/frame_{encodedHex}.png"));
         }
+    }
+
+    private void ResetBrushSettings()
+    {
+        ClientDoodler.RequestResetBrushSettings();
+
+        var encodedHex = Uri.EscapeDataString(Doodler.DefaultBrushHex);
+        SelectedColour.Source = new BitmapImage(new Uri($"pack://application:,,,/Images/Frames/frame_{encodedHex}.png"));
     }
 
     private void SetThickness_Event(object sender, RoutedEventArgs e)

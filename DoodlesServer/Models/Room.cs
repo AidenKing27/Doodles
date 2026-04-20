@@ -97,6 +97,18 @@ public class Room(ServerPlayer host, string code, int playerCount, int doodleTim
         return (int)Math.Round(MAX_POINTS * ratio);
     }
 
+    public int GetDrawerScore()
+    {
+        // AI: i didnt know how to calculate the Doodlers points
+        int requiredGuessers = Players.Count(p => p.PlayerData.GUID != CurrentTurnPlayerGuid);
+        if (requiredGuessers <= 0 || DoodleTime <= 0)
+            return 0;
+
+        double guessedRatio = (double)AllGuessedPlayers.Count / requiredGuessers;
+        double timeRatio = Math.Clamp((double)_timeRemaining / DoodleTime, 0, 1);
+        return (int)Math.Round(MAX_POINTS * guessedRatio * timeRatio);
+    }
+
     public Dictionary<Guid, PlayerRankPair> GetRankOrder()
     {
         var sortedPlayersByScore = Players
