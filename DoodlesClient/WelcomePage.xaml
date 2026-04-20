@@ -24,13 +24,17 @@
 
         <TextBox x:Name="UsernameTxt"
                  Grid.Row="1"
-                 Style="{StaticResource MessageTextBoxStyle}"
+                 Style="{StaticResource MessageTextBoxStyleWelcome}"
                  Tag="Enter your name"
                  MaxLength="16"
                  Margin="5"
                  VerticalContentAlignment="Center"
                  PreviewTextInput="UsernameTxt_PreviewTextInput"
-                 TextChanged="UsernameTxt_TextChanged" />
+                 TextChanged="UsernameTxt_TextChanged">
+            <TextBox.Background>
+                <ImageBrush ImageSource="pack://application:,,,/Images/textbox_name.png" />
+            </TextBox.Background>
+        </TextBox>
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
@@ -40,23 +44,28 @@
 
             <TextBox x:Name="CodeTxt"
                      Grid.Column="0"
-                     Style="{StaticResource MessageTextBoxStyle}"
+                     Style="{StaticResource MessageTextBoxStyleWelcome}"
                      Tag="Room code"
                      MaxLength="5"
                      Margin="5"
                      VerticalContentAlignment="Center"
                      PreviewTextInput="CodeTxt_PreviewTextInput"
-                     TextChanged="CodeTxt_TextChanged" />
+                     TextChanged="CodeTxt_TextChanged">
+                <TextBox.Background>
+                    <ImageBrush ImageSource="pack://application:,,,/Images/textbox_code.png" />
+                </TextBox.Background>
+            </TextBox>
 
             <Button x:Name="JoinBtn"
                     Grid.Column="1"
                     Style="{StaticResource DoodleButtonStyle}"
                     Content="Join Room"
+                    FontSize="18"
                     Margin="5"
                     IsEnabled="False"
                     Click="JoinBtn_Click">
                 <Button.Background>
-                    <ImageBrush ImageSource="pack://application:,,,/Images/playercard_green.png" />
+                    <ImageBrush ImageSource="pack://application:,,,/Images/joinroom.png" />
                 </Button.Background>
 
             </Button>
@@ -68,10 +77,11 @@
                 Style="{StaticResource DoodleButtonStyle}"
                 Content="Create Private Room"
                 Margin="5"
+                FontSize="18"
                 IsEnabled="False"
                 Click="CreateBtn_Click">
             <Button.Background>
-                <ImageBrush ImageSource="pack://application:,,,/Images/playercard_white.png" />
+                <ImageBrush ImageSource="pack://application:,,,/Images/welcomebutton.png" />
             </Button.Background>
 
         </Button>

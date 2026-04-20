@@ -330,7 +330,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
                     Text = chosenWord,
                     Tag = chosenWord,
                     Margin = new Thickness(5, 5, 5, 0),
-                    FontSize = 20,
+                    FontSize = 24,
                 });
             }
             else
@@ -342,7 +342,7 @@ public partial class ClientWindow : Window, INotifyPropertyChanged
                         Text = chosenWord[i] == ' ' ? " " : "_",
                         Tag = i,
                         Margin = new Thickness(5, 5, 5, 0),
-                        FontSize = 20,
+                        FontSize = 24,
                     };
 
                     WordHint.Children.Add(block);

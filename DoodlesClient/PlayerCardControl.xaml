@@ -8,7 +8,7 @@
              DataContext="{Binding RelativeSource={RelativeSource Self}}"
              Margin="0 0 0 5"
              d:DesignHeight="62"
-             d:DesignWidth="330">
+             d:DesignWidth="305">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
@@ -20,7 +20,7 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="58px" />
-            <ColumnDefinition Width="210px" />
+            <ColumnDefinition Width="185px" />
             <ColumnDefinition Width="58px" />
         </Grid.ColumnDefinitions>
 

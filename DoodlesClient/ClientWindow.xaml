@@ -11,7 +11,7 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Title="Doodles"
-        Height="950"
+        Height="1000"
         Width="1700">
     <Window.Background>
         <ImageBrush ImageSource="pack://application:,,,/Images/paper.png" />
@@ -29,14 +29,16 @@
         </Grid.ColumnDefinitions>
 
         <!--Left Grid-->
-        <Grid Grid.Column="0">
+        <Grid Grid.Column="0"
+              Margin="0 0 20 0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="120px" />
+                <RowDefinition Height="110px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
 
-            <Image Margin="20" Source="pack://application:,,,/Images/logo.png" />
+            <Image Margin="20"
+                   Source="pack://application:,,,/Images/logo.png" />
 
             <!--Player List-->
             <StackPanel x:Name="PlayerList"
@@ -61,7 +63,7 @@
         <!--Main Grid-->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60px" />
+                <RowDefinition Height="110px" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="80px" />
             </Grid.RowDefinitions>
@@ -386,17 +388,18 @@
         <!--Right Grid-->
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60px" />
+                <RowDefinition Height="110px" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="80px" />
+                <RowDefinition Height="50px" />
             </Grid.RowDefinitions>
 
+            <!--Room Code-->
             <TextBlock Grid.Row="0"
                        Text="{Binding RoomCodeText}"
-                       FontSize="40"
-                       Margin="0 5 25 0"
-                       HorizontalAlignment="Right"
-                       VerticalAlignment="Top" />
+                       FontSize="42"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center">
+            </TextBlock>
 
             <!--Chat-->
             <ListBox x:Name="MessagesLst"
@@ -435,6 +438,9 @@
                          Margin="5"
                          VerticalContentAlignment="Center"
                          MaxLength="20">
+                    <TextBox.Background>
+                        <ImageBrush ImageSource="pack://application:,,,/Images/textbox.png" />
+                    </TextBox.Background>
                 </TextBox>
 
                 <!--Send-->

@@ -27,7 +27,7 @@ public partial class WelcomePage : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        _client = new("localhost", 55555);
+        _client = new("172.18.31.102", 55555);
         _client.RoomListEvent += Client_RoomListEvent;
 
         await PacketHelper.SendPacketToServer(_client, PacketType.ServerConnect, new());
